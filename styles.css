@@ -248,6 +248,68 @@ img {
   margin-top: 14px;
 }
 
+.design-preset-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.design-preset-button,
+.design-preset-chip {
+  border: 1px solid rgba(54, 38, 27, 0.1);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.design-preset-button:hover,
+.design-preset-chip:hover {
+  transform: translateY(-1px);
+}
+
+.design-preset-button {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  text-align: left;
+}
+
+.design-preset-button strong {
+  font-size: 0.96rem;
+}
+
+.design-preset-button span {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.design-preset-chip {
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.design-preset-button.is-active,
+.design-preset-chip.is-active {
+  border-color: rgba(50, 50, 124, 0.16);
+  background: linear-gradient(135deg, rgba(50, 50, 124, 0.96), rgba(240, 91, 40, 0.94));
+  color: #fff;
+  box-shadow: 0 16px 26px rgba(50, 50, 124, 0.18);
+}
+
+.design-preset-button.is-active span {
+  color: rgba(255, 255, 255, 0.82);
+}
+
 .image-control-card {
   border-radius: 18px;
   padding: 14px;
@@ -368,7 +430,7 @@ img {
 .seller-branch,
 .document-type,
 .headline-total strong {
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--invoice-sans, "Helvetica Neue", Arial, sans-serif);
 }
 
 .line-card-head strong {
@@ -426,8 +488,33 @@ img {
   gap: 10px;
 }
 
+.preview-tools-block,
+.preview-views,
+.design-preset-strip {
+  display: flex;
+  gap: 8px;
+}
+
+.preview-tools-block,
+.preview-views {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .preview-tools {
   flex-wrap: wrap;
+}
+
+.design-preset-strip {
+  flex-wrap: wrap;
+}
+
+.preview-views-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
 .preview-head h2 {
@@ -516,32 +603,183 @@ img {
 }
 
 .invoice-sheet {
+  --invoice-sans: "Helvetica Neue", Arial, sans-serif;
+  --invoice-mono: "Courier New", "Liberation Mono", monospace;
+  --sheet-bg: #fff;
+  --sheet-ink: #2c241f;
+  --sheet-border: rgba(70, 60, 49, 0.18);
+  --sheet-shadow: var(--shadow);
+  --sheet-radius: 6px;
+  --sheet-overlay:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 14%, transparent 86%, rgba(173, 145, 124, 0.02)),
+    radial-gradient(circle at 20% 14%, rgba(240, 208, 112, 0.05), transparent 20%);
+  --core-bg: #fff;
+  --core-border: rgba(70, 60, 49, 0.42);
+  --recipient-bg: #fff;
+  --recipient-border: var(--paper-line);
+  --recipient-shadow: none;
+  --document-bar-bg: transparent;
+  --table-line: var(--paper-soft-line);
+  --table-head-line: var(--paper-line);
+  --table-head-bg: transparent;
+  --table-head-color: currentColor;
+  --reference-row-bg: transparent;
+  --totals-band-bg: transparent;
+  --totals-cell-bg: transparent;
+  --totals-border: var(--paper-line);
+  --totals-cell-border: var(--paper-soft-line);
+  --totals-label-color: var(--ink-soft);
+  --totals-strong-color: currentColor;
+  --signature-bg: rgba(255, 255, 255, 0.08);
+  --watermark-opacity: 0.18;
+  --watermark-filter: sepia(0.38) saturate(0.68) brightness(1.04);
   position: relative;
   width: min(840px, 100%);
   margin: 22px auto 0;
   padding: 22px 18px 16px;
   min-height: 1140px;
-  background: #fff;
-  border-radius: 6px;
-  border: 1px solid rgba(70, 60, 49, 0.18);
-  color: #2c241f;
+  background: var(--sheet-bg);
+  border-radius: var(--sheet-radius);
+  border: 1px solid var(--sheet-border);
+  color: var(--sheet-ink);
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: var(--sheet-shadow);
 }
 
 .invoice-sheet::after {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 14%, transparent 86%, rgba(173, 145, 124, 0.02)),
-    radial-gradient(circle at 20% 14%, rgba(240, 208, 112, 0.05), transparent 20%);
+  background: var(--sheet-overlay);
   pointer-events: none;
 }
 
 .invoice-sheet > * {
   position: relative;
   z-index: 1;
+}
+
+.invoice-sheet[data-design-preset="chantier"] {
+  --sheet-bg: #fefbf6;
+  --sheet-border: rgba(124, 95, 63, 0.26);
+  --sheet-shadow: 0 34px 76px rgba(98, 71, 42, 0.14);
+  --sheet-radius: 12px;
+  --sheet-overlay:
+    linear-gradient(180deg, rgba(255, 251, 242, 0.1), transparent 18%, transparent 84%, rgba(168, 110, 62, 0.03)),
+    radial-gradient(circle at 14% 10%, rgba(201, 155, 83, 0.08), transparent 23%);
+  --core-bg: #fffdf9;
+  --core-border: rgba(124, 95, 63, 0.5);
+  --recipient-bg: #fffdf8;
+  --recipient-border: rgba(124, 95, 63, 0.42);
+  --recipient-shadow: 0 10px 24px rgba(124, 95, 63, 0.06);
+  --document-bar-bg: rgba(168, 110, 62, 0.045);
+  --table-line: rgba(124, 95, 63, 0.18);
+  --table-head-line: rgba(124, 95, 63, 0.42);
+  --table-head-bg: rgba(168, 110, 62, 0.08);
+  --table-head-color: #7a5030;
+  --reference-row-bg: rgba(168, 110, 62, 0.035);
+  --totals-band-bg: rgba(168, 110, 62, 0.035);
+  --totals-cell-bg: rgba(255, 252, 246, 0.72);
+  --totals-border: rgba(124, 95, 63, 0.42);
+  --totals-cell-border: rgba(124, 95, 63, 0.16);
+  --totals-label-color: #8b6a4a;
+  --totals-strong-color: #5c3f27;
+  --signature-bg: rgba(255, 251, 242, 0.82);
+  --watermark-opacity: 0.13;
+  --watermark-filter: sepia(0.55) saturate(0.72) brightness(1.08);
+  --invoice-sans: Arial, "Helvetica Neue", sans-serif;
+}
+
+.invoice-sheet[data-design-preset="atelier"] {
+  --sheet-bg: #fbfdff;
+  --sheet-border: rgba(63, 98, 150, 0.24);
+  --sheet-shadow: 0 34px 84px rgba(31, 58, 99, 0.14);
+  --sheet-radius: 10px;
+  --sheet-overlay:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 16%, transparent 86%, rgba(48, 92, 152, 0.03)),
+    radial-gradient(circle at 16% 9%, rgba(91, 140, 212, 0.08), transparent 24%);
+  --core-bg: #ffffff;
+  --core-border: rgba(63, 98, 150, 0.48);
+  --recipient-bg: #fcfdff;
+  --recipient-border: rgba(63, 98, 150, 0.36);
+  --recipient-shadow: 0 12px 26px rgba(63, 98, 150, 0.07);
+  --document-bar-bg: rgba(63, 98, 150, 0.05);
+  --table-line: rgba(63, 98, 150, 0.18);
+  --table-head-line: rgba(63, 98, 150, 0.42);
+  --table-head-bg: rgba(63, 98, 150, 0.08);
+  --table-head-color: #31527f;
+  --reference-row-bg: rgba(63, 98, 150, 0.035);
+  --totals-band-bg: rgba(63, 98, 150, 0.038);
+  --totals-cell-bg: rgba(255, 255, 255, 0.78);
+  --totals-border: rgba(63, 98, 150, 0.4);
+  --totals-cell-border: rgba(63, 98, 150, 0.16);
+  --totals-label-color: #5a769e;
+  --totals-strong-color: #1f3d65;
+  --signature-bg: rgba(248, 251, 255, 0.84);
+  --watermark-opacity: 0.12;
+  --watermark-filter: grayscale(0.2) sepia(0.2) hue-rotate(172deg) saturate(2.8) brightness(1.12);
+  --invoice-sans: "Trebuchet MS", Arial, sans-serif;
+}
+
+.invoice-sheet[data-design-preset="minimal"] {
+  --sheet-bg: #ffffff;
+  --sheet-border: rgba(33, 33, 33, 0.14);
+  --sheet-shadow: 0 22px 40px rgba(0, 0, 0, 0.07);
+  --sheet-radius: 0;
+  --sheet-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 100%);
+  --core-bg: #ffffff;
+  --core-border: rgba(33, 33, 33, 0.32);
+  --recipient-bg: #ffffff;
+  --recipient-border: rgba(33, 33, 33, 0.24);
+  --recipient-shadow: none;
+  --document-bar-bg: rgba(0, 0, 0, 0.02);
+  --table-line: rgba(0, 0, 0, 0.1);
+  --table-head-line: rgba(0, 0, 0, 0.24);
+  --table-head-bg: rgba(0, 0, 0, 0.04);
+  --table-head-color: #222;
+  --reference-row-bg: rgba(0, 0, 0, 0.018);
+  --totals-band-bg: rgba(0, 0, 0, 0.02);
+  --totals-cell-bg: transparent;
+  --totals-border: rgba(0, 0, 0, 0.24);
+  --totals-cell-border: rgba(0, 0, 0, 0.08);
+  --totals-label-color: #666;
+  --totals-strong-color: #161616;
+  --signature-bg: rgba(255, 255, 255, 0.02);
+  --watermark-opacity: 0.09;
+  --watermark-filter: grayscale(1) sepia(0.15) brightness(1.08);
+  --invoice-sans: "Helvetica Neue", Arial, sans-serif;
+  --invoice-mono: "Helvetica Neue", Arial, sans-serif;
+}
+
+.invoice-sheet[data-design-preset="signal"] {
+  --sheet-bg: #fffefe;
+  --sheet-border: rgba(37, 51, 103, 0.2);
+  --sheet-shadow: 0 34px 82px rgba(25, 36, 78, 0.14);
+  --sheet-radius: 14px;
+  --sheet-overlay:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 18%, transparent 86%, rgba(36, 48, 92, 0.02)),
+    radial-gradient(circle at 15% 10%, rgba(239, 76, 39, 0.07), transparent 22%);
+  --core-bg: #fff;
+  --core-border: rgba(37, 51, 103, 0.48);
+  --recipient-bg: #ffffff;
+  --recipient-border: rgba(239, 76, 39, 0.36);
+  --recipient-shadow: 0 12px 24px rgba(239, 76, 39, 0.06);
+  --document-bar-bg: linear-gradient(90deg, rgba(239, 76, 39, 0.06), rgba(37, 51, 103, 0.04));
+  --table-line: rgba(37, 51, 103, 0.14);
+  --table-head-line: rgba(37, 51, 103, 0.38);
+  --table-head-bg: rgba(37, 51, 103, 0.88);
+  --table-head-color: #ffffff;
+  --reference-row-bg: rgba(239, 76, 39, 0.035);
+  --totals-band-bg: linear-gradient(90deg, rgba(37, 51, 103, 0.06), rgba(239, 76, 39, 0.04));
+  --totals-cell-bg: rgba(255, 255, 255, 0.76);
+  --totals-border: rgba(37, 51, 103, 0.36);
+  --totals-cell-border: rgba(37, 51, 103, 0.1);
+  --totals-label-color: #4f5e8f;
+  --totals-strong-color: #253367;
+  --signature-bg: rgba(255, 255, 255, 0.84);
+  --watermark-opacity: 0.14;
+  --watermark-filter: sepia(0.28) saturate(0.9) brightness(1.08);
+  --invoice-sans: Arial, "Helvetica Neue", sans-serif;
 }
 
 .image-frame {
@@ -588,11 +826,11 @@ img {
   top: 50%;
   z-index: 0;
   background: transparent;
-  opacity: 0.18;
+  opacity: var(--watermark-opacity);
 }
 
 .watermark-frame img {
-  filter: sepia(0.38) saturate(0.68) brightness(1.04);
+  filter: var(--watermark-filter);
 }
 
 .watermark-frame[data-movable-id] {
@@ -667,7 +905,7 @@ img {
   grid-template-columns: 1fr;
   gap: 2px;
   margin-top: 10px;
-  font-family: "Courier New", "Liberation Mono", monospace;
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
   font-size: 0.64rem;
 }
 
@@ -691,14 +929,15 @@ img {
   width: 220px;
   min-height: 96px;
   padding: 10px 12px;
-  border: 1px solid var(--paper-line);
-  background: #fff;
+  border: 1px solid var(--recipient-border);
+  background: var(--recipient-bg);
+  box-shadow: var(--recipient-shadow);
   margin-top: 10px;
 }
 
 .recipient-card p {
   margin: 0;
-  font-family: "Courier New", "Liberation Mono", monospace;
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
   font-size: 0.62rem;
   line-height: 1.35;
   font-weight: 400;
@@ -714,8 +953,8 @@ img {
   flex-direction: column;
   min-height: 712px;
   margin-top: 20px;
-  border: 1px solid rgba(70, 60, 49, 0.42);
-  background: #fff;
+  border: 1px solid var(--core-border);
+  background: var(--core-bg);
 }
 
 .invoice-core > * {
@@ -726,8 +965,9 @@ img {
 .document-bar {
   margin-top: 0;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--paper-line);
-  font-family: "Courier New", "Liberation Mono", monospace;
+  border-bottom: 1px solid var(--table-head-line);
+  background: var(--document-bar-bg);
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
   font-size: 0.7rem;
 }
 
@@ -770,20 +1010,22 @@ img {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-family: "Courier New", "Liberation Mono", monospace;
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
   font-size: 0.66rem;
 }
 
 .invoice-table th,
 .invoice-table td {
   padding: 5px 4px;
-  border-bottom: 1px solid var(--paper-soft-line);
+  border-bottom: 1px solid var(--table-line);
   vertical-align: top;
   text-align: left;
 }
 
 .invoice-table thead th {
-  border-bottom: 1px solid var(--paper-line);
+  border-bottom: 1px solid var(--table-head-line);
+  background: var(--table-head-bg);
+  color: var(--table-head-color);
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -793,7 +1035,8 @@ img {
 .reference-row td {
   padding: 7px 4px 5px;
   font-size: 0.61rem;
-  border-bottom: 1px solid var(--paper-soft-line);
+  border-bottom: 1px solid var(--table-line);
+  background: var(--reference-row-bg);
 }
 
 .invoice-table th:nth-child(1),
@@ -837,7 +1080,7 @@ img {
 .delivery-note,
 .payment-note {
   margin: 12px 0 0;
-  font-family: "Courier New", "Liberation Mono", monospace;
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
   font-size: 0.68rem;
 }
 
@@ -858,8 +1101,8 @@ img {
   bottom: 26px;
   width: 312px;
   height: 76px;
-  border: 1px solid var(--paper-line);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--recipient-border);
+  background: var(--signature-bg);
   z-index: 1;
 }
 
@@ -867,7 +1110,8 @@ img {
   display: grid;
   grid-template-columns: 0.55fr 1fr 1fr 0.8fr 0.9fr 0.95fr 1fr 1fr;
   margin-top: auto;
-  border-top: 1px solid var(--paper-line);
+  border-top: 1px solid var(--totals-border);
+  background: var(--totals-band-bg);
 }
 
 .totals-band div {
@@ -878,7 +1122,8 @@ img {
   gap: 3px;
   min-height: 46px;
   padding: 7px 6px;
-  border-right: 1px solid var(--paper-soft-line);
+  border-right: 1px solid var(--totals-cell-border);
+  background: var(--totals-cell-bg);
 }
 
 .totals-band div:last-child {
@@ -888,21 +1133,22 @@ img {
 .totals-band strong {
   display: block;
   margin-top: 0;
-  font-family: "Courier New", "Liberation Mono", monospace;
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
   font-size: 0.67rem;
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1;
   text-align: center;
+  color: var(--totals-strong-color);
 }
 
 .totals-band span {
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--invoice-sans, "Helvetica Neue", Arial, sans-serif);
   font-size: 0.48rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: none;
-  color: var(--ink-soft);
+  color: var(--totals-label-color);
   line-height: 1;
   text-align: center;
 }
@@ -918,7 +1164,7 @@ img {
 
 .due-date-line {
   padding-top: 0;
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--invoice-sans, "Helvetica Neue", Arial, sans-serif);
   font-size: 0.56rem;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -932,7 +1178,7 @@ img {
   border: 0;
   background: transparent;
   text-align: right;
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--invoice-sans, "Helvetica Neue", Arial, sans-serif);
 }
 
 .insurance-panel {

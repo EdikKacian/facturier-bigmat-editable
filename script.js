@@ -18,6 +18,39 @@ const imageFrameLimits = {
   bannerFrame: { minWidth: 150, minHeight: 56, maxWidth: 420, maxHeight: 220 },
   watermarkFrame: { minWidth: 180, minHeight: 80, maxWidth: 620, maxHeight: 320 },
 };
+const designPresets = [
+  {
+    id: "classic",
+    label: "Actuel",
+    quickLabel: "Actuel",
+    description: "La version actuelle, la plus proche de ton modèle.",
+  },
+  {
+    id: "chantier",
+    label: "Chantier",
+    quickLabel: "Chantier",
+    description: "Un papier plus chaud, plus chantier et plus matériel.",
+  },
+  {
+    id: "atelier",
+    label: "Atelier",
+    quickLabel: "Atelier",
+    description: "Une lecture plus technique avec une ambiance bleutée.",
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    quickLabel: "Minimal",
+    description: "Une version nette, sobre et très propre.",
+  },
+  {
+    id: "signal",
+    label: "Signal",
+    quickLabel: "Signal",
+    description: "Une vue plus contrastée, avec rouge et bleu plus présents.",
+  },
+];
+const defaultDesignPreset = designPresets[0].id;
 
 const lineTemplates = [
   {
@@ -112,6 +145,7 @@ const defaultState = {
   paymentNote:
     "TVA sur les débits. Paiement par virement à réception de facture. En cas de retard, des pénalités pourront être appliquées selon les conditions générales de vente.",
   insuranceNote: CLEAN_INSURANCE_NOTE,
+  designPreset: defaultDesignPreset,
   imageSources: cloneImageSources(defaultImageSources),
   imageFrameSizes: cloneImageFrameSizes(defaultImageFrameSizes),
   layoutOffsets: cloneLayoutOffsets(defaultLayoutOffsets),
@@ -150,6 +184,8 @@ const elements = {
   inputs: Object.fromEntries(
     fieldNames.map((name) => [name, document.querySelector(`[data-field="${name}"]`)]),
   ),
+  designPresetPicker: document.querySelector("#designPresetPicker"),
+  designPresetQuickbar: document.querySelector("#designPresetQuickbar"),
   imageInputs: {
     logoFrame: document.querySelector("#logoImageInput"),
     bannerFrame: document.querySelector("#bannerImageInput"),
@@ -295,6 +331,9 @@ function bindImageInputs() {
 }
 
 function bindActions() {
+  elements.designPresetPicker?.addEventListener("click", handleDesignPresetSelection);
+  elements.designPresetQuickbar?.addEventListener("click", handleDesignPresetSelection);
+
   elements.addLineButton.addEventListener("click", () => {
     state.lines.push(createLine());
     renderAll();
@@ -384,11 +423,64 @@ function bindActions() {
 }
 
 function renderAll() {
+  renderDesignPresetControls();
   syncInputs();
   renderLineEditor();
   renderPreview();
   renderLayoutEditor();
   saveState();
+}
+
+function renderDesignPresetControls() {
+  state.designPreset = sanitizeDesignPreset(state.designPreset);
+
+  if (elements.designPresetPicker) {
+    elements.designPresetPicker.innerHTML = designPresets
+      .map(
+        (preset) => `
+          <button
+            class="design-preset-button${preset.id === state.designPreset ? " is-active" : ""}"
+            type="button"
+            data-design-preset-choice="${preset.id}"
+          >
+            <strong>${escapeHtml(preset.label)}</strong>
+            <span>${escapeHtml(preset.description)}</span>
+          </button>
+        `,
+      )
+      .join("");
+  }
+
+  if (elements.designPresetQuickbar) {
+    elements.designPresetQuickbar.innerHTML = designPresets
+      .map(
+        (preset) => `
+          <button
+            class="design-preset-chip${preset.id === state.designPreset ? " is-active" : ""}"
+            type="button"
+            data-design-preset-choice="${preset.id}"
+          >
+            ${escapeHtml(preset.quickLabel)}
+          </button>
+        `,
+      )
+      .join("");
+  }
+}
+
+function handleDesignPresetSelection(event) {
+  const button = event.target.closest("[data-design-preset-choice]");
+  if (!button) {
+    return;
+  }
+
+  const nextPreset = sanitizeDesignPreset(button.dataset.designPresetChoice);
+  if (nextPreset === state.designPreset) {
+    return;
+  }
+
+  state.designPreset = nextPreset;
+  renderAll();
 }
 
 function syncInputs() {
@@ -470,6 +562,7 @@ function renderLineEditor() {
 function renderPreview() {
   ensureImageSources();
   ensureImageFrameSizes();
+  state.designPreset = sanitizeDesignPreset(state.designPreset);
 
   const computedLines = state.lines.map((line) => computeLine(line));
   const subtotal = roundTo(computedLines.reduce((sum, line) => sum + line.lineTotal, 0), 2);
@@ -479,6 +572,7 @@ function renderPreview() {
   const deposit = sanitizeNumber(state.deposit);
   const balanceDue = roundTo(grandTotal - deposit, 2);
 
+  elements.invoiceSheet.dataset.designPreset = state.designPreset;
   elements.headlineTotal.textContent = formatCurrency(grandTotal);
   elements.previewLogoImage.src = state.imageSources.logoFrame || defaultImageSources.logoFrame;
   elements.previewBannerImage.src = state.imageSources.bannerFrame || defaultImageSources.bannerFrame;
@@ -1096,6 +1190,8 @@ function loadState() {
       nextState.insuranceNote = CLEAN_INSURANCE_NOTE;
     }
 
+    nextState.designPreset = sanitizeDesignPreset(nextState.designPreset);
+
     return nextState;
   } catch (error) {
     console.error(error);
@@ -1154,6 +1250,10 @@ function cloneImageSources(source = defaultImageSources) {
     ...defaultImageSources,
     ...(source || {}),
   };
+}
+
+function sanitizeDesignPreset(value) {
+  return designPresets.some((preset) => preset.id === value) ? value : defaultDesignPreset;
 }
 
 function cloneImageFrameSizes(source = defaultImageFrameSizes) {

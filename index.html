@@ -191,6 +191,22 @@
         <section class="editor-section">
           <div class="section-head">
             <div>
+              <p class="section-tag">Étape 1 ter</p>
+              <h2>Vues rapides</h2>
+            </div>
+          </div>
+
+          <p class="section-copy">
+            Basculez instantanément entre plusieurs habillages de facture sans
+            changer le contenu ni la mise en page.
+          </p>
+
+          <div id="designPresetPicker" class="design-preset-grid"></div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
               <p class="section-tag">Étape 2</p>
               <h2>Vendeur</h2>
             </div>
@@ -334,13 +350,19 @@
             <h2>Facture prête à éditer</h2>
           </div>
           <div class="preview-actions">
-            <div class="preview-tools">
-              <button id="toggleLayoutButton" class="ghost-button compact-button" type="button">
-                Déplacer / redimensionner
-              </button>
-              <button id="resetLayoutButton" class="ghost-button compact-button" type="button">
-                Réinitialiser placements
-              </button>
+            <div class="preview-tools-block">
+              <div class="preview-tools">
+                <button id="toggleLayoutButton" class="ghost-button compact-button" type="button">
+                  Déplacer / redimensionner
+                </button>
+                <button id="resetLayoutButton" class="ghost-button compact-button" type="button">
+                  Réinitialiser placements
+                </button>
+              </div>
+              <div class="preview-views">
+                <span class="preview-views-label">Changer de vue</span>
+                <div id="designPresetQuickbar" class="design-preset-strip"></div>
+              </div>
             </div>
             <div class="headline-total">
               <span>Total TTC</span>
