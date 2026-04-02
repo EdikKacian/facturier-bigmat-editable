@@ -928,15 +928,25 @@ async function runOcrImport() {
   elements.runOcrButton.disabled = true;
 
   try {
+    setOcrStatus("Prétraitement");
+    const preparedImage = await prepareImageForOcr(file);
+
+    setOcrStatus("Analyse OCR");
     const Tesseract = await loadTesseractScript();
-    const worker = await Tesseract.createWorker("fra");
-    const result = await worker.recognize(file);
+    const worker = await Tesseract.createWorker("fra+eng");
+    const result = await worker.recognize(preparedImage);
     await worker.terminate();
 
     state.ocrRawText = result.data.text.trim();
     const extracted = extractInvoiceData(state.ocrRawText);
     applyOcrExtraction(extracted);
-    setOcrStatus(extracted.matchCount > 0 ? "Données trouvées" : "Texte extrait");
+    setOcrStatus(
+      extracted.lines?.length
+        ? `${extracted.lines.length} lignes`
+        : extracted.matchCount > 0
+          ? "Données trouvées"
+          : "Texte extrait",
+    );
     renderAll();
   } catch (error) {
     console.error(error);
@@ -1047,26 +1057,42 @@ function extractRecipientBlock(lines) {
 }
 
 function extractInvoiceLines(lines) {
-  const startIndex = lines.findIndex(
-    (line) => /LIBELL|QT[ÉE]|PV-?BRUT|REMISE/i.test(line),
-  );
+  const startIndex = findInvoiceTableStartIndex(lines);
 
   if (startIndex === -1) {
     return [];
   }
 
   const collected = [];
+  const pendingFragments = [];
 
   for (let index = startIndex + 1; index < lines.length; index += 1) {
     const line = lines[index];
 
-    if (/DATE D['’]ECHEANCE|ÉCHÉANCE|ACOMPTE|COMMUNICATION|ATRADIUS|CONDITIONS/i.test(line)) {
+    if (isInvoiceTableFooter(line)) {
       break;
     }
 
-    const item = parseOcrLine(line);
+    if (isInvoiceTableHeader(line)) {
+      continue;
+    }
+
+    const candidateLine = pendingFragments.length > 0
+      ? `${pendingFragments.join(" ")} ${line}`
+      : line;
+    const item = parseOcrLine(candidateLine) || parseOcrLine(line);
+
     if (item) {
       collected.push(item);
+      pendingFragments.length = 0;
+      continue;
+    }
+
+    if (shouldAccumulateInvoiceLine(line)) {
+      pendingFragments.push(line);
+      if (pendingFragments.length > 4) {
+        pendingFragments.shift();
+      }
     }
 
     if (collected.length >= 18) {
@@ -1078,6 +1104,20 @@ function extractInvoiceLines(lines) {
 }
 
 function parseOcrLine(line) {
+  const legacyItem = parseLegacyOcrLine(line);
+  if (legacyItem) {
+    return legacyItem;
+  }
+
+  const structuredItem = parseStructuredOcrLine(line);
+  if (structuredItem) {
+    return structuredItem;
+  }
+
+  return null;
+}
+
+function parseLegacyOcrLine(line) {
   if (!/^\d{4,}/.test(line)) {
     return null;
   }
@@ -1132,6 +1172,45 @@ function parseOcrLine(line) {
   });
 }
 
+function parseStructuredOcrLine(line) {
+  const normalized = normalizeLine(line).replace(/\s*€\s*$/i, "").trim();
+
+  if (normalized.length < 8) {
+    return null;
+  }
+
+  const match = normalized.match(
+    /^(?<label>.+?)\s+(?<quantity>-?\d+(?:[.,]\d+)?)\s+(?<unitPrice>\d+(?:[ \u00A0\u202F]?\d+)*(?:[.,]\d+)?)\s+(?<lineTotal>\d+(?:[ \u00A0\u202F]?\d+)*(?:[.,]\d+)?)(?:\s*(?:€|EUR))?$/i,
+  );
+
+  if (!match?.groups) {
+    return null;
+  }
+
+  const label = match.groups.label.trim();
+  const quantity = sanitizeNumber(match.groups.quantity);
+  let unitPrice = sanitizeLocalizedNumber(match.groups.unitPrice);
+  const lineTotal = sanitizeLocalizedNumber(match.groups.lineTotal);
+
+  if (!label || label.length < 3 || quantity <= 0 || unitPrice <= 0 || lineTotal <= 0) {
+    return null;
+  }
+
+  const recomputedTotal = roundTo(quantity * unitPrice, 2);
+  if (Math.abs(recomputedTotal - lineTotal) > Math.max(1, lineTotal * 0.03) && quantity > 0) {
+    unitPrice = roundTo(lineTotal / quantity, 2);
+  }
+
+  return createLine({
+    reference: "",
+    label,
+    quantity,
+    unit: "U",
+    unitPrice,
+    discount: 0,
+  });
+}
+
 function applyOcrExtraction(extracted) {
   const simpleFields = [
     "invoiceNumber",
@@ -1153,7 +1232,14 @@ function applyOcrExtraction(extracted) {
   });
 
   if (Array.isArray(extracted.lines) && extracted.lines.length > 0) {
-    state.lines = extracted.lines;
+    state.lines = extracted.lines.map((line) => createLine({
+      reference: line.reference,
+      label: line.label,
+      quantity: line.quantity,
+      unit: line.unit,
+      unitPrice: line.unitPrice,
+      discount: line.discount,
+    }));
   }
 }
 
@@ -1177,6 +1263,39 @@ function findDateNearKeyword(lines, keywordPattern) {
 function extractDateValue(line) {
   const match = line.match(/(\d{1,2}[/. -]\d{1,2}[/. -]\d{2,4})/);
   return match ? convertTextDateToInput(match[1]) : "";
+}
+
+function findInvoiceTableStartIndex(lines) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const current = lines[index];
+    const next = lines[index + 1] || "";
+    if (
+      /(ARTICLE|DESIGNATION|D[ÉE]SIGNATION|LIBELL|DESCRIPTION|NOM DE L['’]ARTICLE)/i.test(current)
+      && /(QT[ÉE]|QUANTIT|TARIF|PRIX|MONTANT|PU|P\.?U\.?)/i.test(`${current} ${next}`)
+    ) {
+      return index;
+    }
+
+    if (/(QT[ÉE]|QUANTIT|TARIF|PRIX|MONTANT|PU|P\.?U\.?)/i.test(current) && index > 0) {
+      if (/(ARTICLE|DESIGNATION|D[ÉE]SIGNATION|LIBELL|DESCRIPTION)/i.test(lines[index - 1])) {
+        return index - 1;
+      }
+    }
+  }
+
+  return lines.findIndex((line) => /LIBELL|QT[ÉE]|PV-?BRUT|REMISE|TARIF|MONTANT/i.test(line));
+}
+
+function isInvoiceTableHeader(line) {
+  return /(ARTICLE|DESIGNATION|D[ÉE]SIGNATION|LIBELL|DESCRIPTION|QUANTIT|QT[ÉE]|MONTANT|TARIF|PRIX|PV-?BRUT|P\.?U\.?)/i.test(line);
+}
+
+function isInvoiceTableFooter(line) {
+  return /(SOUS[- ]?TOTAL|TOTAL TTC|TOTAL HT|NET A ?PAYER|NET [ÀA] PAYER|DATE D['’]ECHEANCE|[ÉE]CH[ÉE]ANCE|ACOMPTE|COMMUNICATION|ATRADIUS|CONDITIONS|NOTES?|MONTANT TVA|TVA \d)/i.test(line);
+}
+
+function shouldAccumulateInvoiceLine(line) {
+  return /[A-ZÀ-ÿ]/.test(line) && !isInvoiceTableFooter(line) && !isInvoiceTableHeader(line);
 }
 
 function normalizeLine(line) {
@@ -1373,6 +1492,18 @@ function sanitizeNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function sanitizeLocalizedNumber(value) {
+  if (typeof value !== "string") {
+    return sanitizeNumber(value);
+  }
+
+  const normalized = value
+    .replace(/[\u00A0\u202F ]/g, "")
+    .replace(/,/g, ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function sanitizeSizeValue(value, fallback) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -1465,6 +1596,41 @@ async function readImageSource(file) {
 
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.92);
+}
+
+async function prepareImageForOcr(file) {
+  const source = await readFileAsDataUrl(file);
+  const image = await loadImageElement(source);
+  const maxWidth = 2200;
+  const scale = Math.min(1, maxWidth / Math.max(image.naturalWidth, 1));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) {
+    return source;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  const imageData = context.getImageData(0, 0, width, height);
+  const { data } = imageData;
+
+  for (let index = 0; index < data.length; index += 4) {
+    const gray = Math.round(data[index] * 0.2126 + data[index + 1] * 0.7152 + data[index + 2] * 0.0722);
+    const contrasted = clamp(Math.round((gray - 128) * 1.35 + 136), 0, 255);
+    const normalized = contrasted > 204 ? 255 : contrasted < 78 ? 0 : contrasted;
+
+    data[index] = normalized;
+    data[index + 1] = normalized;
+    data[index + 2] = normalized;
+  }
+
+  context.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/jpeg", 0.94);
 }
 
 function readFileAsDataUrl(file) {
