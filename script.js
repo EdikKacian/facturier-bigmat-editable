@@ -53,6 +53,24 @@ const designPresets = [
     quickLabel: "Signal",
     description: "Une vue plus contrastée, avec rouge et bleu plus présents.",
   },
+  {
+    id: "ticket",
+    label: "Ticket",
+    quickLabel: "Ticket",
+    description: "Un bordereau noir et blanc très compact, style PDF de dépôt.",
+  },
+  {
+    id: "retail",
+    label: "Retail",
+    quickLabel: "Retail",
+    description: "Une facture très blanche et bleue, plus grande enseigne.",
+  },
+  {
+    id: "studio",
+    label: "Studio",
+    quickLabel: "Studio",
+    description: "Une version premium atelier, plus architecte et plus éditoriale.",
+  },
 ];
 const defaultDesignPreset = designPresets[0].id;
 
@@ -284,6 +302,10 @@ elements.imageFrameMap = Object.fromEntries(
 );
 
 let state = loadState();
+const presetFromUrl = readPresetFromUrl();
+if (presetFromUrl) {
+  state.designPreset = presetFromUrl;
+}
 let layoutEditMode = false;
 let activeMovableId = null;
 let dragState = null;
@@ -1429,6 +1451,16 @@ function cloneImageSources(source = defaultImageSources) {
 
 function sanitizeDesignPreset(value) {
   return designPresets.some((preset) => preset.id === value) ? value : defaultDesignPreset;
+}
+
+function readPresetFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const preset = params.get("preset");
+    return preset ? sanitizeDesignPreset(preset) : "";
+  } catch (error) {
+    return "";
+  }
 }
 
 function cloneImageFrameSizes(source = defaultImageFrameSizes) {
