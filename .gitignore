@@ -1,0 +1,5 @@
+*.pdf
+preview-*.png
+Capture d’écran *.png
+.DS_Store
+test-results/

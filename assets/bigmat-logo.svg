@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 390" role="img" aria-labelledby="title desc">
+  <title id="title">Logo BigMat</title>
+  <desc id="desc">Logo BigMat avec signature Les bâtisseurs ont leur maison.</desc>
+  <rect width="1040" height="390" fill="white"/>
+  <g font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900">
+    <text x="14" y="218" font-size="250" fill="#124c94" letter-spacing="-7">Big</text>
+    <text x="462" y="218" font-size="250" fill="#f40518" letter-spacing="-7">Mat</text>
+  </g>
+  <rect x="6" y="256" width="300" height="24" fill="#124c94"/>
+  <rect x="318" y="256" width="690" height="24" fill="#124c94"/>
+  <text
+    x="10"
+    y="375"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="50"
+    font-weight="800"
+    letter-spacing="1.2"
+    fill="#4b4b4b"
+  >
+    LES BÂTISSEURS ONT LEUR MAISON
+  </text>
+</svg>

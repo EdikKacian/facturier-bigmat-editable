@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 240" role="img" aria-labelledby="title desc">
+  <title id="title">Bandeau catégories BigMat</title>
+  <desc id="desc">Icônes métiers BigMat, barre rouge et catégories de produits.</desc>
+  <rect width="1000" height="240" fill="white"/>
+  <g stroke="#1a2f63" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(38 28)">
+      <line x1="18" y1="10" x2="18" y2="52"/>
+      <line x1="6" y1="16" x2="30" y2="16"/>
+      <circle cx="43" cy="34" r="9"/>
+      <circle cx="18" cy="58" r="4" fill="#1a2f63"/>
+    </g>
+    <g transform="translate(112 18)">
+      <path d="M14 54c0-24 16-38 36-38s36 14 36 38"/>
+      <path d="M20 54h60v18H20z"/>
+      <path d="M28 16h44"/>
+    </g>
+    <g transform="translate(222 20)">
+      <path d="M20 58c0-24 14-40 30-40 18 0 30 16 30 40"/>
+      <line x1="25" y1="66" x2="25" y2="102"/>
+      <line x1="40" y1="66" x2="40" y2="102"/>
+      <line x1="55" y1="66" x2="55" y2="102"/>
+    </g>
+    <g transform="translate(312 26)">
+      <rect x="12" y="18" width="84" height="44"/>
+      <line x1="40" y1="18" x2="40" y2="62"/>
+      <line x1="68" y1="18" x2="68" y2="62"/>
+      <line x1="12" y1="40" x2="96" y2="40"/>
+    </g>
+    <g transform="translate(444 22)">
+      <path d="M20 34h20l-6 12H14z"/>
+      <line x1="34" y1="46" x2="34" y2="102"/>
+      <path d="M72 38h14l-5 16H67z"/>
+      <line x1="74" y1="54" x2="74" y2="100"/>
+      <line x1="60" y1="88" x2="88" y2="88"/>
+      <line x1="74" y1="88" x2="60" y2="106"/>
+      <line x1="74" y1="88" x2="88" y2="106"/>
+    </g>
+    <g transform="translate(550 18)">
+      <rect x="20" y="24" width="22" height="22" transform="rotate(45 31 35)" fill="#1a2f63"/>
+      <rect x="52" y="24" width="22" height="22" transform="rotate(45 63 35)" fill="#1a2f63"/>
+      <rect x="20" y="56" width="22" height="22" transform="rotate(45 31 67)" fill="#1a2f63"/>
+      <rect x="52" y="56" width="22" height="22" transform="rotate(45 63 67)" fill="#1a2f63"/>
+    </g>
+    <g transform="translate(654 22)">
+      <circle cx="48" cy="50" r="34"/>
+      <path d="M48 16a34 34 0 0 1 28 14"/>
+      <path d="M36 62c10-18 28-26 42-20"/>
+      <circle cx="48" cy="50" r="8" fill="#1a2f63"/>
+    </g>
+    <g transform="translate(760 28)">
+      <rect x="10" y="22" width="40" height="10" fill="#1a2f63"/>
+      <path d="M50 24h14v10H50z" fill="#1a2f63"/>
+      <line x1="50" y1="50" x2="76" y2="76"/>
+      <line x1="64" y1="36" x2="78" y2="80"/>
+    </g>
+    <g transform="translate(846 34)">
+      <line x1="10" y1="54" x2="38" y2="30"/>
+      <line x1="44" y1="28" x2="84" y2="62"/>
+      <line x1="34" y1="70" x2="62" y2="46"/>
+      <line x1="60" y1="46" x2="88" y2="70"/>
+    </g>
+    <g transform="translate(926 26)">
+      <rect x="8" y="22" width="54" height="58"/>
+      <path d="M12 32c12-7 18-8 28-4s18 3 26-1"/>
+      <path d="M12 48c10-7 18-8 28-4s18 3 26-1"/>
+      <path d="M12 64c12-7 18-8 28-4s18 3 26-1"/>
+    </g>
+  </g>
+  <rect x="32" y="124" width="936" height="24" fill="#ef1b23"/>
+  <text
+    x="500"
+    y="192"
+    font-family="Helvetica Neue, Arial, sans-serif"
+    font-size="28"
+    text-anchor="middle"
+    fill="#24355f"
+  >
+    Gros oeuvre - Bricolage - Bois - Peinture - Parquet - Carrelage
+  </text>
+  <text
+    x="500"
+    y="226"
+    font-family="Helvetica Neue, Arial, sans-serif"
+    font-size="28"
+    text-anchor="middle"
+    fill="#24355f"
+  >
+    Électricité - Sanitaire - Outillage - Vêtements - Toiture
+  </text>
+</svg>

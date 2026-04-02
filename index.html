@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Facturier BigMat | Outil de factures</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="editor-panel">
+        <div class="editor-head">
+          <p class="eyebrow">Outil de factures</p>
+          <h1>Modèle BigMat éditable</h1>
+          <p>
+            Modifiez les champs, ajoutez des lignes et imprimez directement en PDF.
+            L’import OCR sert à préremplir les informations à partir d’une photo.
+          </p>
+        </div>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
+              <p class="section-tag">Assistant</p>
+              <h2>Import OCR</h2>
+            </div>
+            <span id="ocrStatus" class="status-chip">Prêt</span>
+          </div>
+
+          <p class="section-copy">
+            Chargez une facture scannée pour tenter d’extraire le numéro, les dates,
+            l’adresse client et certaines lignes.
+          </p>
+
+          <label class="file-input-shell" for="ocrInput">
+            <span>Image de facture</span>
+            <input id="ocrInput" type="file" accept="image/*" />
+          </label>
+
+          <div class="button-row">
+            <button id="runOcrButton" class="primary-button" type="button">
+              Analyser l’image
+            </button>
+            <button id="prefillDemoButton" class="ghost-button" type="button">
+              Recharger l’exemple
+            </button>
+          </div>
+
+          <details class="ocr-details">
+            <summary>Texte OCR brut</summary>
+            <textarea
+              id="ocrRawText"
+              rows="8"
+              spellcheck="false"
+              placeholder="Le texte détecté apparaîtra ici."
+            ></textarea>
+          </details>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
+              <p class="section-tag">Étape 1</p>
+              <h2>Document</h2>
+            </div>
+          </div>
+
+          <div class="field-grid two-columns">
+            <label class="field">
+              <span>Type</span>
+              <select data-field="documentType">
+                <option value="Facture">Facture</option>
+                <option value="Devis">Devis</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Numéro</span>
+              <input data-field="invoiceNumber" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Date</span>
+              <input data-field="invoiceDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Échéance</span>
+              <input data-field="dueDate" type="date" />
+            </label>
+
+            <label class="field">
+              <span>Réf. interne</span>
+              <input data-field="internalReference" type="text" />
+            </label>
+
+            <label class="field">
+              <span>BL / Dossier</span>
+              <input data-field="deliveryReference" type="text" />
+            </label>
+
+            <label class="field">
+              <span>TVA</span>
+              <select data-field="vatRate">
+                <option value="0">0 %</option>
+                <option value="6">6 %</option>
+                <option value="12">12 %</option>
+                <option value="20">20 %</option>
+                <option value="21">21 %</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Acompte</span>
+              <input data-field="deposit" type="number" min="0" step="0.01" />
+            </label>
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
+              <p class="section-tag">Étape 1 bis</p>
+              <h2>Zones image</h2>
+            </div>
+          </div>
+
+          <p class="section-copy">
+            Importez vos visuels puis activez le mode de placement pour déplacer
+            ou redimensionner chaque cadre directement sur la facture.
+          </p>
+
+          <div class="image-control-list">
+            <div class="image-control-card">
+              <div class="image-control-head">
+                <strong>Logo haut gauche</strong>
+                <button
+                  class="ghost-button compact-button"
+                  type="button"
+                  data-reset-image="logoFrame"
+                >
+                  Défaut
+                </button>
+              </div>
+              <label class="file-input-shell compact-upload" for="logoImageInput">
+                <span>Importer une image</span>
+                <input id="logoImageInput" type="file" accept="image/*" />
+              </label>
+            </div>
+
+            <div class="image-control-card">
+              <div class="image-control-head">
+                <strong>Bandeau haut droit</strong>
+                <button
+                  class="ghost-button compact-button"
+                  type="button"
+                  data-reset-image="bannerFrame"
+                >
+                  Défaut
+                </button>
+              </div>
+              <label class="file-input-shell compact-upload" for="bannerImageInput">
+                <span>Importer une image</span>
+                <input id="bannerImageInput" type="file" accept="image/*" />
+              </label>
+            </div>
+
+            <div class="image-control-card">
+              <div class="image-control-head">
+                <strong>Grand visuel central</strong>
+                <button
+                  class="ghost-button compact-button"
+                  type="button"
+                  data-reset-image="watermarkFrame"
+                >
+                  Défaut
+                </button>
+              </div>
+              <label class="file-input-shell compact-upload" for="watermarkImageInput">
+                <span>Importer une image</span>
+                <input id="watermarkImageInput" type="file" accept="image/*" />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
+              <p class="section-tag">Étape 2</p>
+              <h2>Vendeur</h2>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Nom agence</span>
+              <input data-field="sellerBranch" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Catégories</span>
+              <input data-field="sellerCategories" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Société</span>
+              <input data-field="sellerLegal" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Adresse 1</span>
+              <input data-field="sellerAddressLine1" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Adresse 2</span>
+              <input data-field="sellerAddressLine2" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Identité / TVA</span>
+              <input data-field="sellerIdentityLine" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Banque 1</span>
+              <input data-field="sellerBank1" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Banque 2</span>
+              <input data-field="sellerBank2" type="text" />
+            </label>
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
+              <p class="section-tag">Étape 3</p>
+              <h2>Client</h2>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Nom</span>
+              <input data-field="recipientName" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Rue</span>
+              <input data-field="recipientStreet" type="text" />
+            </label>
+
+            <div class="field-grid two-columns nested-grid">
+              <label class="field">
+                <span>Code postal</span>
+                <input data-field="recipientPostalCode" type="text" />
+              </label>
+
+              <label class="field">
+                <span>Ville</span>
+                <input data-field="recipientCity" type="text" />
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Téléphone</span>
+              <input data-field="recipientPhone" type="text" />
+            </label>
+          </div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
+              <p class="section-tag">Étape 4</p>
+              <h2>Lignes de facture</h2>
+            </div>
+            <button id="addLineButton" class="ghost-button compact-button" type="button">
+              Ajouter
+            </button>
+          </div>
+
+          <div id="lineEditor" class="line-editor"></div>
+        </section>
+
+        <section class="editor-section">
+          <div class="section-head">
+            <div>
+              <p class="section-tag">Étape 5</p>
+              <h2>Notes</h2>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Ligne sous tableau</span>
+              <input data-field="deliveryNote" type="text" />
+            </label>
+
+            <label class="field">
+              <span>Conditions</span>
+              <textarea data-field="paymentNote" rows="4"></textarea>
+            </label>
+
+            <label class="field">
+              <span>Bloc assurance / rappel</span>
+              <textarea data-field="insuranceNote" rows="3"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <div class="action-bar">
+          <button id="printButton" class="primary-button" type="button">
+            Imprimer / PDF
+          </button>
+          <button id="resetButton" class="ghost-button" type="button">
+            Réinitialiser
+          </button>
+        </div>
+      </aside>
+
+      <main class="preview-panel">
+        <div class="preview-head">
+          <div>
+            <p class="eyebrow">Aperçu live</p>
+            <h2>Facture prête à éditer</h2>
+          </div>
+          <div class="preview-actions">
+            <div class="preview-tools">
+              <button id="toggleLayoutButton" class="ghost-button compact-button" type="button">
+                Déplacer / redimensionner
+              </button>
+              <button id="resetLayoutButton" class="ghost-button compact-button" type="button">
+                Réinitialiser placements
+              </button>
+            </div>
+            <div class="headline-total">
+              <span>Total TTC</span>
+              <strong id="headlineTotal">0,00 €</strong>
+            </div>
+          </div>
+        </div>
+
+        <article class="invoice-sheet" id="invoiceSheet">
+          <header class="invoice-top">
+            <div class="brand-block">
+              <div
+                class="image-frame logo-frame"
+                data-image-frame-id="logoFrame"
+                data-movable-id="logoFrame"
+                data-movable-label="Image logo"
+                data-resizable-id="logoFrame"
+              >
+                <img
+                  src="assets/bigmat-logo.svg"
+                  alt="Logo BigMat"
+                  class="brand-logo"
+                  id="previewLogoImage"
+                />
+                <span class="resize-handle" data-resize-handle aria-hidden="true"></span>
+              </div>
+              <div
+                class="seller-text-group"
+                data-movable-id="sellerText"
+                data-movable-label="Texte vendeur"
+              >
+                <p id="previewSellerBranch" class="seller-branch">SAINT-MARCEL</p>
+                <p id="previewSellerLegal" class="seller-copy">BigMat BMC</p>
+                <p id="previewSellerAddressLine1" class="seller-copy">25 rue Louis Alphonse Poitevin</p>
+                <p id="previewSellerAddressLine2" class="seller-copy">71380 Saint-Marcel, France</p>
+                <p id="previewSellerIdentityLine" class="seller-copy">Tél. 03 71 41 02 00</p>
+                <div class="bank-lines">
+                  <span id="previewSellerBank1"></span>
+                  <span id="previewSellerBank2"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="recipient-block">
+              <div
+                class="image-frame banner-frame top-categories"
+                id="previewSellerCategories"
+                data-image-frame-id="bannerFrame"
+                data-movable-id="bannerFrame"
+                data-movable-label="Image bandeau"
+                data-resizable-id="bannerFrame"
+              >
+                <img
+                  src="assets/bigmat-categories-banner.svg"
+                  alt="Catégories BigMat"
+                  class="categories-banner"
+                  id="previewBannerImage"
+                />
+                <span class="visually-hidden">
+                  Gros oeuvre · Bricolage · Bois · Peinture · Parquet · Carrelage
+                </span>
+                <span class="resize-handle" data-resize-handle aria-hidden="true"></span>
+              </div>
+              <div
+                class="recipient-card"
+                data-movable-id="clientBox"
+                data-movable-label="Bloc client"
+              >
+                <div
+                  class="recipient-text-group"
+                  data-movable-id="clientText"
+                  data-movable-label="Texte client"
+                >
+                  <p id="previewRecipientName">KACIAN ROSTAM</p>
+                  <p id="previewRecipientStreet">6 rue Jacques Copeau</p>
+                  <p>
+                    <span id="previewRecipientPostalCode">71100</span>
+                    <span id="previewRecipientCity">Chalon-sur-Saône</span>
+                  </p>
+                  <p id="previewRecipientPhone"></p>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <section
+            class="invoice-core"
+            data-movable-id="coreBox"
+            data-movable-label="Grand bloc"
+          >
+            <section class="document-bar">
+              <div
+                class="bar-left"
+                data-movable-id="docLeftText"
+                data-movable-label="Texte entête gauche"
+              >
+                <span>Réf. int. <strong id="previewInternalReference">19352</strong></span>
+                <span>BL <strong id="previewDeliveryReference">-</strong></span>
+              </div>
+              <div
+                class="bar-center"
+                data-movable-id="docCenterText"
+                data-movable-label="Texte entête centre"
+              >
+                <strong id="previewDocumentType" class="document-type">FACTURE</strong>
+                <span class="document-number">
+                  No <strong id="previewInvoiceNumber">20/283647</strong>
+                </span>
+              </div>
+              <div
+                class="bar-right"
+                data-movable-id="docRightText"
+                data-movable-label="Texte entête droite"
+              >
+                Le <strong id="previewInvoiceDate">10/07/2025</strong>
+              </div>
+            </section>
+
+            <section class="table-shell">
+              <table class="invoice-table">
+                <thead>
+                  <tr>
+                    <th>No-Art</th>
+                    <th>Libellé</th>
+                    <th>Qté</th>
+                    <th>UV</th>
+                    <th>PV-brut</th>
+                    <th>Remise</th>
+                    <th>PV-net</th>
+                    <th>Total C</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="reference-row">
+                    <td colspan="8">
+                      Référence interne =&gt; <strong id="previewReferenceLine">129393</strong>
+                    </td>
+                  </tr>
+                </tbody>
+                <tbody id="previewLineBody"></tbody>
+              </table>
+            </section>
+
+            <p
+              id="previewDeliveryNote"
+              class="delivery-note"
+              data-movable-id="deliveryText"
+              data-movable-label="Texte note"
+            >
+              Le 10/07/25 enlèvement dépôt Saint-Marcel
+            </p>
+
+            <section class="invoice-canvas">
+              <div
+                class="image-frame watermark-frame"
+                data-image-frame-id="watermarkFrame"
+                data-movable-id="watermarkFrame"
+                data-movable-label="Image centrale"
+                data-resizable-id="watermarkFrame"
+              >
+                <img
+                  src="assets/bigmat-logo.svg"
+                  alt="Filigrane BigMat"
+                  id="previewWatermarkImage"
+                />
+                <span class="resize-handle" data-resize-handle aria-hidden="true"></span>
+              </div>
+              <div
+                class="canvas-signature-box"
+                data-movable-id="signatureBox"
+                data-movable-label="Cadre signature"
+                aria-hidden="true"
+              ></div>
+              <span id="previewDueDateInline" class="visually-hidden">18/07/2025</span>
+            </section>
+
+            <section
+              class="totals-band"
+              data-movable-id="totalsText"
+              data-movable-label="Bloc totaux"
+            >
+              <div>
+                <span>Lignes</span>
+                <strong id="previewLineCount">0</strong>
+              </div>
+              <div>
+                <span>Total HT</span>
+                <strong id="previewSubtotal">0,00</strong>
+              </div>
+              <div>
+                <span>Base TVA</span>
+                <strong id="previewTaxBase">0,00</strong>
+              </div>
+              <div>
+                <span>TVA %</span>
+                <strong id="previewVatRate">21</strong>
+              </div>
+              <div>
+                <span>Montant TVA</span>
+                <strong id="previewVatAmount">0,00</strong>
+              </div>
+              <div>
+                <span>Total TTC</span>
+                <strong id="previewGrandTotal">0,00</strong>
+              </div>
+              <div>
+                <span>Acompte</span>
+                <strong id="previewDeposit">0,00</strong>
+              </div>
+              <div>
+                <span>Net à payer</span>
+                <strong id="previewBalanceDue">0,00</strong>
+              </div>
+            </section>
+          </section>
+
+          <footer class="invoice-footer">
+            <div
+              class="due-date-line"
+              data-movable-id="dueDateText"
+              data-movable-label="Texte échéance"
+            >
+              DATE D’ÉCHÉANCE : <strong id="previewDueDate">18/07/2025</strong>
+            </div>
+            <p
+              class="insurance-panel"
+              id="previewInsuranceNote"
+              data-movable-id="footerText"
+              data-movable-label="Texte bas de page"
+            >
+              Paiement par virement à réception de facture.
+            </p>
+          </footer>
+
+          <p
+            id="previewPaymentNote"
+            class="payment-note"
+            data-movable-id="legalText"
+            data-movable-label="Texte mentions"
+          >
+            Conditions générales de vente et de versement applicables selon l’offre,
+            l’acceptation et la date d’échéance.
+          </p>
+        </article>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
