@@ -54,43 +54,84 @@ const defaultDesignPreset = designPresets[0].id;
 
 const lineTemplates = [
   {
-    reference: "PSE-TH31-100",
-    label: "Panneau isolant PSE TH31 facade 100mm 1200x600",
+    reference: "",
+    label:
+      "Isolant polystyrene 140 Knauf thermique Th38 Epaisseur : 140 mm Conductivite 1 : 0,031 W/m·K Resistance thermique R : 4.5m2.K/W",
     quantity: 214,
-    unit: "PC",
-    unitPrice: 14.5,
+    unit: "U",
+    unitPrice: 21.89,
     discount: 0,
   },
   {
-    reference: "ITE-CHEV-120",
-    label: "Cheville composite a frapper ITE Ø10x120 mm",
-    quantity: 1284,
-    unit: "PC",
-    unitPrice: 0.18,
+    reference: "",
+    label: "Colle VPI PSE",
+    quantity: 49,
+    unit: "U",
+    unitPrice: 26.42,
     discount: 0,
   },
   {
-    reference: "ALU-DEP-100",
-    label: "Profil de depart aluminium ITE 100 mm L. 3 m",
-    quantity: 30,
-    unit: "ML",
-    unitPrice: 6.8,
+    reference: "",
+    label: "Rouleau de trame",
+    quantity: 4,
+    unit: "U",
+    unitPrice: 63.67,
     discount: 0,
   },
   {
-    reference: "ALU-FIN-COUV",
-    label: "Profil finition aluminium / couvertine facade",
+    reference: "",
+    label: "Enduit de finition au choix",
+    quantity: 21,
+    unit: "U",
+    unitPrice: 94.66,
+    discount: 0,
+  },
+  {
+    reference: "",
+    label: "Rail de depart 140mm",
+    quantity: 45,
+    unit: "U",
+    unitPrice: 36.56,
+    discount: 0,
+  },
+  {
+    reference: "",
+    label: "Chevilles pour plaque polystyrene",
+    quantity: 11,
+    unit: "U",
+    unitPrice: 67.99,
+    discount: 0,
+  },
+  {
+    reference: "",
+    label: "Profile de finition haut/Couvertine 3m",
+    quantity: 6,
+    unit: "U",
+    unitPrice: 61.9,
+    discount: 0,
+  },
+  {
+    reference: "",
+    label: "Baguettes d'angles",
     quantity: 20,
-    unit: "ML",
-    unitPrice: 9.5,
+    unit: "U",
+    unitPrice: 11.33,
     discount: 0,
   },
   {
-    reference: "VPI-COL-25",
-    label: "Mortier-colle facade VPI sac 25 kg",
-    quantity: 40,
-    unit: "PC",
-    unitPrice: 22,
+    reference: "",
+    label: "Main d'oeuvre",
+    quantity: 148,
+    unit: "U",
+    unitPrice: 60,
+    discount: 0,
+  },
+  {
+    reference: "",
+    label: "Montage/demontage echafaudage",
+    quantity: 150,
+    unit: "U",
+    unitPrice: 20,
     discount: 0,
   },
 ];
@@ -227,7 +268,6 @@ const elements = {
   previewInvoiceDate: document.querySelector("#previewInvoiceDate"),
   previewInternalReference: document.querySelector("#previewInternalReference"),
   previewDeliveryReference: document.querySelector("#previewDeliveryReference"),
-  previewReferenceLine: document.querySelector("#previewReferenceLine"),
   previewLineBody: document.querySelector("#previewLineBody"),
   previewDeliveryNote: document.querySelector("#previewDeliveryNote"),
   previewDueDateInline: document.querySelector("#previewDueDateInline"),
@@ -235,6 +275,7 @@ const elements = {
   previewSubtotal: document.querySelector("#previewSubtotal"),
   previewTaxBase: document.querySelector("#previewTaxBase"),
   previewVatRate: document.querySelector("#previewVatRate"),
+  previewVatAmountLabel: document.querySelector("#previewVatAmountLabel"),
   previewVatAmount: document.querySelector("#previewVatAmount"),
   previewGrandTotal: document.querySelector("#previewGrandTotal"),
   previewDeposit: document.querySelector("#previewDeposit"),
@@ -391,10 +432,20 @@ function bindActions() {
     }
 
     const field = target.dataset.lineField;
-    line[field] = field === "label" || field === "reference" || field === "unit"
-      ? target.value
-      : sanitizeNumericInput(target.value);
-    renderAll();
+    if (field === "displayUnitPrice") {
+      line.unitPrice = sanitizeNumericInput(target.value);
+      line.discount = 0;
+    } else {
+      line[field] = field === "label" || field === "reference" || field === "unit"
+        ? target.value
+        : sanitizeNumericInput(target.value);
+    }
+
+    const card = target.closest(".line-card");
+    updateLineCardComputed(card, computeLine(line));
+    renderPreview();
+    renderLayoutEditor();
+    saveState();
   });
 
   elements.lineEditor.addEventListener("click", (event) => {
@@ -518,8 +569,8 @@ function renderLineEditor() {
         <div>
           <strong>Ligne ${index + 1}</strong>
           <div class="line-card-meta">
-            <span>Net: ${formatAmount(computed.netUnitPrice, 3)} €</span>
-            <span>Total: ${formatCurrency(computed.lineTotal)}</span>
+            <span data-line-meta="price">Tarif HT: ${formatAmount(computed.netUnitPrice)} €</span>
+            <span data-line-meta="total">Montant HT: ${formatCurrency(computed.lineTotal)}</span>
           </div>
         </div>
         <div class="button-row">
@@ -528,32 +579,38 @@ function renderLineEditor() {
         </div>
       </div>
 
-      <div class="line-grid">
-        <label>
-          <span>Référence</span>
-          <input type="text" value="${escapeAttribute(line.reference)}" data-line-id="${line.id}" data-line-field="reference" />
-        </label>
+      <div class="line-grid line-grid-main">
         <label class="wide-cell">
-          <span>Libellé</span>
+          <span>Nom de l'article</span>
           <input type="text" value="${escapeAttribute(line.label)}" data-line-id="${line.id}" data-line-field="label" />
         </label>
         <label>
-          <span>Qté</span>
+          <span>Quantité</span>
           <input type="number" min="0" step="0.01" value="${escapeAttribute(line.quantity)}" data-line-id="${line.id}" data-line-field="quantity" />
         </label>
         <label>
-          <span>UV</span>
-          <input type="text" value="${escapeAttribute(line.unit)}" data-line-id="${line.id}" data-line-field="unit" />
+          <span>Tarif HT</span>
+          <input type="number" min="0" step="0.01" value="${escapeAttribute(computed.netUnitPrice)}" data-line-id="${line.id}" data-line-field="displayUnitPrice" />
         </label>
-        <label>
-          <span>PV brut</span>
-          <input type="number" min="0" step="0.001" value="${escapeAttribute(line.unitPrice)}" data-line-id="${line.id}" data-line-field="unitPrice" />
-        </label>
-        <label>
-          <span>Remise %</span>
-          <input type="number" min="0" step="0.01" value="${escapeAttribute(line.discount)}" data-line-id="${line.id}" data-line-field="discount" />
-        </label>
+        <div class="line-total-box">
+          <span>Montant HT</span>
+          <strong data-line-total-display>${formatCurrency(computed.lineTotal)}</strong>
+        </div>
       </div>
+
+      <details class="line-advanced">
+        <summary>Options avancees</summary>
+        <div class="line-grid line-grid-advanced">
+          <label>
+            <span>Reference article</span>
+            <input type="text" value="${escapeAttribute(line.reference)}" data-line-id="${line.id}" data-line-field="reference" />
+          </label>
+          <label>
+            <span>Unite</span>
+            <input type="text" value="${escapeAttribute(line.unit)}" data-line-id="${line.id}" data-line-field="unit" />
+          </label>
+        </div>
+      </details>
     `;
     elements.lineEditor.appendChild(article);
   });
@@ -610,13 +667,13 @@ function renderPreview() {
   elements.previewInvoiceDate.textContent = formatDate(state.invoiceDate);
   elements.previewInternalReference.textContent = state.internalReference || "-";
   elements.previewDeliveryReference.textContent = state.deliveryReference || "-";
-  elements.previewReferenceLine.textContent = state.internalReference || "-";
   elements.previewDeliveryNote.textContent = state.deliveryNote || "";
   elements.previewDueDateInline.textContent = formatDate(state.dueDate);
   elements.previewLineCount.textContent = String(computedLines.length);
   elements.previewSubtotal.textContent = formatAmount(subtotal);
   elements.previewTaxBase.textContent = formatAmount(subtotal);
   elements.previewVatRate.textContent = formatFlexible(vatRate);
+  elements.previewVatAmountLabel.textContent = `TVA ${formatFlexible(vatRate)} %`;
   elements.previewVatAmount.textContent = formatAmount(vatAmount);
   elements.previewGrandTotal.textContent = formatAmount(grandTotal);
   elements.previewDeposit.textContent = formatAmount(deposit);
@@ -790,7 +847,7 @@ function renderPreviewLines(lines) {
   if (lines.length === 0) {
     const row = document.createElement("tr");
     row.className = "empty-row";
-    row.innerHTML = '<td colspan="8">Ajoutez des lignes dans le panneau de gauche.</td>';
+    row.innerHTML = '<td colspan="4">Ajoutez des lignes dans le panneau de gauche.</td>';
     elements.previewLineBody.appendChild(row);
     return;
   }
@@ -798,17 +855,35 @@ function renderPreviewLines(lines) {
   lines.forEach((line) => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${escapeHtml(line.reference || "-")}</td>
-      <td>${escapeHtml(line.label || "Ligne sans libellé")}</td>
+      <td>${escapeHtml(line.label || line.reference || "Ligne sans libelle")}</td>
       <td>${formatQuantity(line.quantity)}</td>
-      <td>${escapeHtml(line.unit || "-")}</td>
-      <td>${formatAmount(line.unitPrice, 3)}</td>
-      <td>${formatFlexible(line.discount)}</td>
-      <td>${formatAmount(line.netUnitPrice, 3)}</td>
+      <td>${formatAmount(line.netUnitPrice)}</td>
       <td>${formatAmount(line.lineTotal)}</td>
     `;
     elements.previewLineBody.appendChild(row);
   });
+}
+
+function updateLineCardComputed(card, computed) {
+  if (!card) {
+    return;
+  }
+
+  const priceNode = card.querySelector('[data-line-meta="price"]');
+  const totalNode = card.querySelector('[data-line-meta="total"]');
+  const totalDisplay = card.querySelector("[data-line-total-display]");
+
+  if (priceNode) {
+    priceNode.textContent = `Tarif HT: ${formatAmount(computed.netUnitPrice)} €`;
+  }
+
+  if (totalNode) {
+    totalNode.textContent = `Montant HT: ${formatCurrency(computed.lineTotal)}`;
+  }
+
+  if (totalDisplay) {
+    totalDisplay.textContent = formatCurrency(computed.lineTotal);
+  }
 }
 
 function computeLine(line) {

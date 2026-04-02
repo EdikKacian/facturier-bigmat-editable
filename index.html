@@ -485,23 +485,12 @@
               <table class="invoice-table">
                 <thead>
                   <tr>
-                    <th>No-Art</th>
-                    <th>Libellé</th>
-                    <th>Qté</th>
-                    <th>UV</th>
-                    <th>PV-brut</th>
-                    <th>Remise</th>
-                    <th>PV-net</th>
-                    <th>Total C</th>
+                    <th>Nom de l’article</th>
+                    <th>Quantité</th>
+                    <th>Tarif HT</th>
+                    <th>Montant HT</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr class="reference-row">
-                    <td colspan="8">
-                      Référence interne =&gt; <strong id="previewReferenceLine">129393</strong>
-                    </td>
-                  </tr>
-                </tbody>
                 <tbody id="previewLineBody"></tbody>
               </table>
             </section>
@@ -549,7 +538,7 @@
                 <strong id="previewLineCount">0</strong>
               </div>
               <div>
-                <span>Total HT</span>
+                <span>Sous-total HT</span>
                 <strong id="previewSubtotal">0,00</strong>
               </div>
               <div>
@@ -561,7 +550,7 @@
                 <strong id="previewVatRate">21</strong>
               </div>
               <div>
-                <span>Montant TVA</span>
+                <span id="previewVatAmountLabel">TVA 20 %</span>
                 <strong id="previewVatAmount">0,00</strong>
               </div>
               <div>
@@ -569,7 +558,7 @@
                 <strong id="previewGrandTotal">0,00</strong>
               </div>
               <div>
-                <span>Acompte</span>
+                <span>Acompte versé</span>
                 <strong id="previewDeposit">0,00</strong>
               </div>
               <div>

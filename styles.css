@@ -448,13 +448,22 @@ img {
 
 .line-grid {
   display: grid;
-  grid-template-columns: 1.1fr 1.45fr 1.45fr repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-top: 12px;
 }
 
+.line-grid-main {
+  grid-template-columns: minmax(0, 2.4fr) minmax(110px, 0.85fr) minmax(120px, 0.95fr) minmax(120px, 1fr);
+  align-items: end;
+}
+
+.line-grid-advanced {
+  grid-template-columns: minmax(0, 1.3fr) minmax(90px, 0.7fr);
+}
+
 .line-grid .wide-cell {
-  grid-column: span 2;
+  grid-column: auto;
 }
 
 .line-card-head .button-row {
@@ -469,6 +478,40 @@ img {
 .line-grid span {
   font-size: 0.72rem;
   font-weight: 600;
+}
+
+.line-total-box {
+  display: grid;
+  gap: 6px;
+  padding: 11px 14px;
+  min-height: 51px;
+  border-radius: 16px;
+  border: 1px solid rgba(54, 38, 27, 0.08);
+  background: rgba(255, 255, 255, 0.84);
+  align-content: center;
+}
+
+.line-total-box span {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.line-total-box strong {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.line-advanced {
+  margin-top: 12px;
+  border-top: 1px solid rgba(54, 38, 27, 0.08);
+  padding-top: 10px;
+}
+
+.line-advanced summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
 }
 
 .empty-lines {
@@ -1032,43 +1075,24 @@ img {
   font-weight: 700;
 }
 
-.reference-row td {
-  padding: 7px 4px 5px;
-  font-size: 0.61rem;
-  border-bottom: 1px solid var(--table-line);
-  background: var(--reference-row-bg);
-}
-
 .invoice-table th:nth-child(1),
 .invoice-table td:nth-child(1) {
-  width: 10%;
-  font-size: 0.58rem;
-  letter-spacing: 0.01em;
+  width: 62%;
+  font-size: 0.63rem;
+  line-height: 1.28;
 }
 
 .invoice-table th:nth-child(2),
 .invoice-table td:nth-child(2) {
-  width: 39%;
-  font-size: 0.61rem;
-  line-height: 1.2;
+  width: 11%;
+  text-align: center;
 }
 
 .invoice-table th:nth-child(3),
 .invoice-table td:nth-child(3),
 .invoice-table th:nth-child(4),
 .invoice-table td:nth-child(4) {
-  width: 7%;
-}
-
-.invoice-table th:nth-child(5),
-.invoice-table td:nth-child(5),
-.invoice-table th:nth-child(6),
-.invoice-table td:nth-child(6),
-.invoice-table th:nth-child(7),
-.invoice-table td:nth-child(7),
-.invoice-table th:nth-child(8),
-.invoice-table td:nth-child(8) {
-  width: 9%;
+  width: 13.5%;
   text-align: right;
 }
 
