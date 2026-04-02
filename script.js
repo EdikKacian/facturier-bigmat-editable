@@ -145,7 +145,6 @@ const defaultLayoutOffsets = {
   clientText: { x: 0, y: 0 },
   categoriesText: { x: 0, y: 0 },
   coreBox: { x: 0, y: 0 },
-  docLeftText: { x: 0, y: 0 },
   docCenterText: { x: 0, y: 0 },
   docRightText: { x: 0, y: 0 },
   deliveryText: { x: 0, y: 0 },
@@ -163,8 +162,6 @@ const defaultState = {
   invoiceNumber: "20/283647",
   invoiceDate: "2025-07-10",
   dueDate: "2025-07-18",
-  internalReference: "19352",
-  deliveryReference: "",
   communication: "",
   vatRate: "20",
   deposit: "0",
@@ -199,8 +196,6 @@ const fieldNames = [
   "invoiceNumber",
   "invoiceDate",
   "dueDate",
-  "internalReference",
-  "deliveryReference",
   "vatRate",
   "deposit",
   "sellerBranch",
@@ -266,8 +261,6 @@ const elements = {
   previewDocumentType: document.querySelector("#previewDocumentType"),
   previewInvoiceNumber: document.querySelector("#previewInvoiceNumber"),
   previewInvoiceDate: document.querySelector("#previewInvoiceDate"),
-  previewInternalReference: document.querySelector("#previewInternalReference"),
-  previewDeliveryReference: document.querySelector("#previewDeliveryReference"),
   previewLineBody: document.querySelector("#previewLineBody"),
   previewDeliveryNote: document.querySelector("#previewDeliveryNote"),
   previewDueDateInline: document.querySelector("#previewDueDateInline"),
@@ -665,8 +658,6 @@ function renderPreview() {
   elements.previewDocumentType.textContent = (state.documentType || "Facture").toUpperCase();
   elements.previewInvoiceNumber.textContent = state.invoiceNumber || "-";
   elements.previewInvoiceDate.textContent = formatDate(state.invoiceDate);
-  elements.previewInternalReference.textContent = state.internalReference || "-";
-  elements.previewDeliveryReference.textContent = state.deliveryReference || "-";
   elements.previewDeliveryNote.textContent = state.deliveryNote || "";
   elements.previewDueDateInline.textContent = formatDate(state.dueDate);
   elements.previewLineCount.textContent = String(computedLines.length);
@@ -1216,8 +1207,6 @@ function applyOcrExtraction(extracted) {
     "invoiceNumber",
     "invoiceDate",
     "dueDate",
-    "internalReference",
-    "deliveryReference",
     "recipientName",
     "recipientStreet",
     "recipientPostalCode",
