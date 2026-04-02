@@ -3,6 +3,10 @@ const LAYOUT_VERSION = 4;
 const LEGACY_INSURANCE_NOTE =
   "Paiement par virement avec la référence indiquée ci-contre. En cas de doute OCR, corrigez manuellement les champs avant impression.";
 const CLEAN_INSURANCE_NOTE = "Paiement par virement à réception de facture.";
+const LEGACY_PAYMENT_NOTE =
+  "TVA sur les débits. Paiement par virement à réception de facture. En cas de retard, des pénalités pourront être appliquées selon les conditions générales de vente.";
+const CLEAN_PAYMENT_NOTE =
+  "Paiement par virement à réception de facture. En cas de retard, des pénalités pourront être appliquées selon les conditions générales de vente.";
 const defaultImageSources = {
   logoFrame: "assets/bigmat-logo.svg",
   bannerFrame: "assets/bigmat-categories-banner.svg",
@@ -163,7 +167,6 @@ const defaultState = {
   invoiceDate: "2025-07-10",
   dueDate: "2025-07-18",
   communication: "",
-  vatRate: "20",
   deposit: "0",
   sellerBranch: "SAINT-MARCEL",
   sellerCategories:
@@ -180,8 +183,7 @@ const defaultState = {
   recipientCity: "Chalon-sur-Saône",
   recipientPhone: "",
   deliveryNote: "Le 10/07/25 enlèvement dépôt Saint-Marcel",
-  paymentNote:
-    "TVA sur les débits. Paiement par virement à réception de facture. En cas de retard, des pénalités pourront être appliquées selon les conditions générales de vente.",
+  paymentNote: CLEAN_PAYMENT_NOTE,
   insuranceNote: CLEAN_INSURANCE_NOTE,
   designPreset: defaultDesignPreset,
   imageSources: cloneImageSources(defaultImageSources),
@@ -196,7 +198,6 @@ const fieldNames = [
   "invoiceNumber",
   "invoiceDate",
   "dueDate",
-  "vatRate",
   "deposit",
   "sellerBranch",
   "sellerCategories",
@@ -265,11 +266,6 @@ const elements = {
   previewDeliveryNote: document.querySelector("#previewDeliveryNote"),
   previewDueDateInline: document.querySelector("#previewDueDateInline"),
   previewLineCount: document.querySelector("#previewLineCount"),
-  previewSubtotal: document.querySelector("#previewSubtotal"),
-  previewTaxBase: document.querySelector("#previewTaxBase"),
-  previewVatRate: document.querySelector("#previewVatRate"),
-  previewVatAmountLabel: document.querySelector("#previewVatAmountLabel"),
-  previewVatAmount: document.querySelector("#previewVatAmount"),
   previewGrandTotal: document.querySelector("#previewGrandTotal"),
   previewDeposit: document.querySelector("#previewDeposit"),
   previewBalanceDue: document.querySelector("#previewBalanceDue"),
@@ -562,8 +558,8 @@ function renderLineEditor() {
         <div>
           <strong>Ligne ${index + 1}</strong>
           <div class="line-card-meta">
-            <span data-line-meta="price">Tarif HT: ${formatAmount(computed.netUnitPrice)} €</span>
-            <span data-line-meta="total">Montant HT: ${formatCurrency(computed.lineTotal)}</span>
+            <span data-line-meta="price">Tarif TTC: ${formatAmount(computed.unitPriceTtc)} €</span>
+            <span data-line-meta="total">Montant TTC: ${formatCurrency(computed.lineTotal)}</span>
           </div>
         </div>
         <div class="button-row">
@@ -582,11 +578,11 @@ function renderLineEditor() {
           <input type="number" min="0" step="0.01" value="${escapeAttribute(line.quantity)}" data-line-id="${line.id}" data-line-field="quantity" />
         </label>
         <label>
-          <span>Tarif HT</span>
-          <input type="number" min="0" step="0.01" value="${escapeAttribute(computed.netUnitPrice)}" data-line-id="${line.id}" data-line-field="displayUnitPrice" />
+          <span>Tarif TTC</span>
+          <input type="number" min="0" step="0.01" value="${escapeAttribute(computed.unitPriceTtc)}" data-line-id="${line.id}" data-line-field="displayUnitPrice" />
         </label>
         <div class="line-total-box">
-          <span>Montant HT</span>
+          <span>Montant TTC</span>
           <strong data-line-total-display>${formatCurrency(computed.lineTotal)}</strong>
         </div>
       </div>
@@ -615,10 +611,7 @@ function renderPreview() {
   state.designPreset = sanitizeDesignPreset(state.designPreset);
 
   const computedLines = state.lines.map((line) => computeLine(line));
-  const subtotal = roundTo(computedLines.reduce((sum, line) => sum + line.lineTotal, 0), 2);
-  const vatRate = sanitizeNumber(state.vatRate);
-  const vatAmount = roundTo(subtotal * (vatRate / 100), 2);
-  const grandTotal = roundTo(subtotal + vatAmount, 2);
+  const grandTotal = roundTo(computedLines.reduce((sum, line) => sum + line.lineTotal, 0), 2);
   const deposit = sanitizeNumber(state.deposit);
   const balanceDue = roundTo(grandTotal - deposit, 2);
 
@@ -661,11 +654,6 @@ function renderPreview() {
   elements.previewDeliveryNote.textContent = state.deliveryNote || "";
   elements.previewDueDateInline.textContent = formatDate(state.dueDate);
   elements.previewLineCount.textContent = String(computedLines.length);
-  elements.previewSubtotal.textContent = formatAmount(subtotal);
-  elements.previewTaxBase.textContent = formatAmount(subtotal);
-  elements.previewVatRate.textContent = formatFlexible(vatRate);
-  elements.previewVatAmountLabel.textContent = `TVA ${formatFlexible(vatRate)} %`;
-  elements.previewVatAmount.textContent = formatAmount(vatAmount);
   elements.previewGrandTotal.textContent = formatAmount(grandTotal);
   elements.previewDeposit.textContent = formatAmount(deposit);
   elements.previewBalanceDue.textContent = formatAmount(balanceDue);
@@ -848,7 +836,7 @@ function renderPreviewLines(lines) {
     row.innerHTML = `
       <td>${escapeHtml(line.label || line.reference || "Ligne sans libelle")}</td>
       <td>${formatQuantity(line.quantity)}</td>
-      <td>${formatAmount(line.netUnitPrice)}</td>
+      <td>${formatAmount(line.unitPriceTtc)}</td>
       <td>${formatAmount(line.lineTotal)}</td>
     `;
     elements.previewLineBody.appendChild(row);
@@ -865,11 +853,11 @@ function updateLineCardComputed(card, computed) {
   const totalDisplay = card.querySelector("[data-line-total-display]");
 
   if (priceNode) {
-    priceNode.textContent = `Tarif HT: ${formatAmount(computed.netUnitPrice)} €`;
+    priceNode.textContent = `Tarif TTC: ${formatAmount(computed.unitPriceTtc)} €`;
   }
 
   if (totalNode) {
-    totalNode.textContent = `Montant HT: ${formatCurrency(computed.lineTotal)}`;
+    totalNode.textContent = `Montant TTC: ${formatCurrency(computed.lineTotal)}`;
   }
 
   if (totalDisplay) {
@@ -881,15 +869,15 @@ function computeLine(line) {
   const quantity = sanitizeNumber(line.quantity);
   const unitPrice = sanitizeNumber(line.unitPrice);
   const discount = clamp(sanitizeNumber(line.discount), 0, 100);
-  const netUnitPrice = roundTo(unitPrice * (1 - discount / 100), 3);
-  const lineTotal = roundTo(quantity * netUnitPrice, 2);
+  const unitPriceTtc = roundTo(unitPrice * (1 - discount / 100), 3);
+  const lineTotal = roundTo(quantity * unitPriceTtc, 2);
 
   return {
     ...line,
     quantity,
     unitPrice,
     discount,
-    netUnitPrice,
+    unitPriceTtc,
     lineTotal,
   };
 }
@@ -1371,6 +1359,10 @@ function loadState() {
 
     if (nextState.insuranceNote === LEGACY_INSURANCE_NOTE) {
       nextState.insuranceNote = CLEAN_INSURANCE_NOTE;
+    }
+
+    if (nextState.paymentNote === LEGACY_PAYMENT_NOTE) {
+      nextState.paymentNote = CLEAN_PAYMENT_NOTE;
     }
 
     nextState.designPreset = sanitizeDesignPreset(nextState.designPreset);

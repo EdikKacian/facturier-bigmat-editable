@@ -94,17 +94,6 @@
             </label>
 
             <label class="field">
-              <span>TVA</span>
-              <select data-field="vatRate">
-                <option value="0">0 %</option>
-                <option value="6">6 %</option>
-                <option value="12">12 %</option>
-                <option value="20">20 %</option>
-                <option value="21">21 %</option>
-              </select>
-            </label>
-
-            <label class="field">
               <span>Acompte</span>
               <input data-field="deposit" type="number" min="0" step="0.01" />
             </label>
@@ -229,7 +218,7 @@
             </label>
 
             <label class="field">
-              <span>Identité / TVA</span>
+              <span>Téléphone / SIRET</span>
               <input data-field="sellerIdentityLine" type="text" />
             </label>
 
@@ -469,8 +458,8 @@
                   <tr>
                     <th>Nom de l’article</th>
                     <th>Quantité</th>
-                    <th>Tarif HT</th>
-                    <th>Montant HT</th>
+                    <th>Tarif TTC</th>
+                    <th>Montant TTC</th>
                   </tr>
                 </thead>
                 <tbody id="previewLineBody"></tbody>
@@ -518,22 +507,6 @@
               <div>
                 <span>Lignes</span>
                 <strong id="previewLineCount">0</strong>
-              </div>
-              <div>
-                <span>Sous-total HT</span>
-                <strong id="previewSubtotal">0,00</strong>
-              </div>
-              <div>
-                <span>Base TVA</span>
-                <strong id="previewTaxBase">0,00</strong>
-              </div>
-              <div>
-                <span>TVA %</span>
-                <strong id="previewVatRate">21</strong>
-              </div>
-              <div>
-                <span id="previewVatAmountLabel">TVA 20 %</span>
-                <strong id="previewVatAmount">0,00</strong>
               </div>
               <div>
                 <span>Total TTC</span>
