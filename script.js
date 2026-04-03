@@ -1,5 +1,5 @@
 const STORAGE_KEY = "bigmat-invoice-tool-v4";
-const LAYOUT_VERSION = 4;
+const LAYOUT_VERSION = 6;
 const LEGACY_INSURANCE_NOTE =
   "Paiement par virement avec la référence indiquée ci-contre. En cas de doute OCR, corrigez manuellement les champs avant impression.";
 const CLEAN_INSURANCE_NOTE = "Paiement par virement à réception de facture.";
@@ -17,6 +17,44 @@ const defaultImageFrameSizes = {
   bannerFrame: { width: 250, height: 88 },
   watermarkFrame: { width: 352, height: 164 },
 };
+const presetImageFrameSizes = {
+  classic: defaultImageFrameSizes,
+  chantier: {
+    logoFrame: { width: 236, height: 96 },
+    bannerFrame: { width: 322, height: 82 },
+    watermarkFrame: { width: 320, height: 148 },
+  },
+  atelier: {
+    logoFrame: { width: 208, height: 92 },
+    bannerFrame: { width: 220, height: 72 },
+    watermarkFrame: { width: 290, height: 132 },
+  },
+  minimal: {
+    logoFrame: { width: 188, height: 82 },
+    bannerFrame: { width: 228, height: 68 },
+    watermarkFrame: { width: 286, height: 128 },
+  },
+  signal: {
+    logoFrame: { width: 228, height: 98 },
+    bannerFrame: { width: 246, height: 78 },
+    watermarkFrame: { width: 310, height: 142 },
+  },
+  ticket: {
+    logoFrame: { width: 142, height: 64 },
+    bannerFrame: { width: 158, height: 54 },
+    watermarkFrame: { width: 220, height: 96 },
+  },
+  retail: {
+    logoFrame: { width: 180, height: 70 },
+    bannerFrame: { width: 244, height: 72 },
+    watermarkFrame: { width: 274, height: 118 },
+  },
+  studio: {
+    logoFrame: { width: 214, height: 88 },
+    bannerFrame: { width: 240, height: 72 },
+    watermarkFrame: { width: 306, height: 138 },
+  },
+};
 const imageFrameLimits = {
   logoFrame: { minWidth: 120, minHeight: 56, maxWidth: 420, maxHeight: 220 },
   bannerFrame: { minWidth: 150, minHeight: 56, maxWidth: 420, maxHeight: 220 },
@@ -28,48 +66,56 @@ const designPresets = [
     label: "Actuel",
     quickLabel: "Actuel",
     description: "La version actuelle, la plus proche de ton modèle.",
+    template: "classic-document",
   },
   {
     id: "chantier",
-    label: "Chantier",
-    quickLabel: "Chantier",
-    description: "Un papier plus chaud, plus chantier et plus matériel.",
+    label: "Bannière",
+    quickLabel: "Bannière",
+    description: "Un vrai layout à bandeau large, plus éditorial et plus chantier.",
+    template: "banner-statement",
   },
   {
     id: "atelier",
-    label: "Atelier",
-    quickLabel: "Atelier",
-    description: "Une lecture plus technique avec une ambiance bleutée.",
+    label: "Ledger",
+    quickLabel: "Ledger",
+    description: "Une facture à colonne latérale, plus technique et plus bleutée.",
+    template: "sidebar-ledger",
   },
   {
     id: "minimal",
-    label: "Minimal",
-    quickLabel: "Minimal",
-    description: "Une version nette, sobre et très propre.",
+    label: "Service",
+    quickLabel: "Service",
+    description: "Une facture intervention/prestation, plus simple et plus directe.",
+    template: "service-dispatch",
   },
   {
     id: "signal",
-    label: "Signal",
-    quickLabel: "Signal",
-    description: "Une vue plus contrastée, avec rouge et bleu plus présents.",
+    label: "Deck",
+    quickLabel: "Deck",
+    description: "Une composition en cartes asymétriques, plus marquée et plus contrastée.",
+    template: "card-deck",
   },
   {
     id: "ticket",
     label: "Ticket",
     quickLabel: "Ticket",
     description: "Un bordereau noir et blanc très compact, style PDF de dépôt.",
+    template: "ticket-slip",
   },
   {
     id: "retail",
-    label: "Retail",
-    quickLabel: "Retail",
-    description: "Une facture très blanche et bleue, plus grande enseigne.",
+    label: "Triptyque",
+    quickLabel: "Triptyque",
+    description: "Une facture à trois cartes en tête, plus grande enseigne.",
+    template: "retail-triptych",
   },
   {
     id: "studio",
     label: "Studio",
     quickLabel: "Studio",
     description: "Une version premium atelier, plus architecte et plus éditoriale.",
+    template: "studio-letter",
   },
 ];
 const defaultDesignPreset = designPresets[0].id;
@@ -205,8 +251,8 @@ const defaultState = {
   insuranceNote: CLEAN_INSURANCE_NOTE,
   designPreset: defaultDesignPreset,
   imageSources: cloneImageSources(defaultImageSources),
-  imageFrameSizes: cloneImageFrameSizes(defaultImageFrameSizes),
-  layoutOffsets: cloneLayoutOffsets(defaultLayoutOffsets),
+  imageFrameSizes: createImageFrameSizeStore(defaultDesignPreset),
+  layoutOffsets: createLayoutOffsetStore(defaultDesignPreset),
   ocrRawText: "",
   ocrLastAppliedText: "",
   lines: lineTemplates.map(createLine),
@@ -304,6 +350,41 @@ elements.movableBoxMap = Object.fromEntries(
 elements.imageFrameMap = Object.fromEntries(
   elements.imageFrames.map((node) => [node.dataset.imageFrameId, node]),
 );
+
+const previewNodeSelectors = {
+  previewBankLines: ".bank-lines",
+  previewLogoImage: "#previewLogoImage",
+  previewBannerImage: "#previewBannerImage",
+  previewWatermarkImage: "#previewWatermarkImage",
+  previewSellerBranch: "#previewSellerBranch",
+  previewSellerCategories: "#previewSellerCategories",
+  previewSellerLegal: "#previewSellerLegal",
+  previewSellerAddressLine1: "#previewSellerAddressLine1",
+  previewSellerAddressLine2: "#previewSellerAddressLine2",
+  previewSellerIdentityLine: "#previewSellerIdentityLine",
+  previewSellerBank1: "#previewSellerBank1",
+  previewSellerBank2: "#previewSellerBank2",
+  previewRecipientName: "#previewRecipientName",
+  previewRecipientStreet: "#previewRecipientStreet",
+  previewRecipientPostalCode: "#previewRecipientPostalCode",
+  previewRecipientCity: "#previewRecipientCity",
+  previewRecipientPhone: "#previewRecipientPhone",
+  previewDocumentType: "#previewDocumentType",
+  previewInvoiceNumber: "#previewInvoiceNumber",
+  previewInvoiceDate: "#previewInvoiceDate",
+  previewLineBody: "#previewLineBody",
+  previewDeliveryNote: "#previewDeliveryNote",
+  previewDueDateInline: "#previewDueDateInline",
+  previewLineCount: "#previewLineCount",
+  previewGrandTotal: "#previewGrandTotal",
+  previewDeposit: "#previewDeposit",
+  previewBalanceDue: "#previewBalanceDue",
+  previewDueDate: "#previewDueDate",
+  previewInsuranceNote: "#previewInsuranceNote",
+  previewPaymentNote: "#previewPaymentNote",
+};
+
+refreshPreviewBindings();
 
 let state = loadState();
 const presetFromUrl = readPresetFromUrl();
@@ -458,8 +539,9 @@ function bindActions() {
   });
 
   elements.resetLayoutButton.addEventListener("click", () => {
-    state.layoutOffsets = cloneLayoutOffsets(defaultLayoutOffsets);
-    state.imageFrameSizes = cloneImageFrameSizes(defaultImageFrameSizes);
+    const activePreset = sanitizeDesignPreset(state.designPreset);
+    state.layoutOffsets[activePreset] = cloneLayoutOffsets(defaultLayoutOffsets);
+    state.imageFrameSizes[activePreset] = cloneImageFrameSizes(null, activePreset);
     activeMovableId = null;
     renderLayoutEditor();
     saveState();
@@ -526,6 +608,31 @@ function renderAll() {
   renderPreview();
   renderLayoutEditor();
   saveState();
+}
+
+function refreshPreviewBindings() {
+  const root = elements.invoiceSheet;
+
+  Object.entries(previewNodeSelectors).forEach(([key, selector]) => {
+    elements[key] = root?.querySelector(selector) || null;
+  });
+
+  elements.movableBoxes = [...(root?.querySelectorAll("[data-movable-id]") || [])];
+  elements.imageFrames = [...(root?.querySelectorAll("[data-image-frame-id]") || [])];
+  elements.movableBoxMap = Object.fromEntries(
+    elements.movableBoxes.map((node) => [node.dataset.movableId, node]),
+  );
+  elements.imageFrameMap = Object.fromEntries(
+    elements.imageFrames.map((node) => [node.dataset.imageFrameId, node]),
+  );
+}
+
+function getActivePresetConfig() {
+  return designPresets.find((preset) => preset.id === state.designPreset) || designPresets[0];
+}
+
+function getActiveTemplateId() {
+  return getActivePresetConfig().template || "classic-document";
 }
 
 function renderOcrPanel() {
@@ -706,9 +813,650 @@ function renderLineEditor() {
   });
 }
 
+function renderInvoiceTemplate() {
+  const templateId = getActiveTemplateId();
+  elements.invoiceSheet.className = `invoice-sheet invoice-template invoice-template--${templateId}`;
+  elements.invoiceSheet.dataset.designPreset = state.designPreset;
+  elements.invoiceSheet.dataset.template = templateId;
+  elements.invoiceSheet.innerHTML = renderInvoiceTemplateMarkup(templateId);
+  refreshPreviewBindings();
+}
+
+function renderInvoiceTemplateMarkup(templateId) {
+  switch (templateId) {
+    case "banner-statement":
+      return renderBannerStatementTemplate();
+    case "sidebar-ledger":
+      return renderSidebarLedgerTemplate();
+    case "service-dispatch":
+      return renderServiceDispatchTemplate();
+    case "card-deck":
+      return renderCardDeckTemplate();
+    case "ticket-slip":
+      return renderTicketSlipTemplate();
+    case "retail-triptych":
+      return renderRetailTriptychTemplate();
+    case "studio-letter":
+      return renderStudioLetterTemplate();
+    case "classic-document":
+    default:
+      return renderClassicDocumentTemplate();
+  }
+}
+
+function renderLogoFrameShell(extraClass = "") {
+  return `
+    <div
+      class="${`image-frame logo-frame ${extraClass}`.trim()}"
+      data-image-frame-id="logoFrame"
+      data-movable-id="logoFrame"
+      data-movable-label="Image logo"
+      data-resizable-id="logoFrame"
+    >
+      <img
+        src="assets/bigmat-logo.svg"
+        alt="Logo BigMat"
+        class="brand-logo"
+        id="previewLogoImage"
+      />
+      <span class="resize-handle" data-resize-handle aria-hidden="true"></span>
+    </div>
+  `;
+}
+
+function renderBannerFrameShell(extraClass = "") {
+  return `
+    <div
+      class="${`image-frame banner-frame top-categories ${extraClass}`.trim()}"
+      id="previewSellerCategories"
+      data-image-frame-id="bannerFrame"
+      data-movable-id="bannerFrame"
+      data-movable-label="Image bandeau"
+      data-resizable-id="bannerFrame"
+    >
+      <img
+        src="assets/bigmat-categories-banner.svg"
+        alt="Catégories BigMat"
+        class="categories-banner"
+        id="previewBannerImage"
+      />
+      <span class="visually-hidden">
+        Gros oeuvre · Bricolage · Bois · Peinture · Parquet · Carrelage
+      </span>
+      <span class="resize-handle" data-resize-handle aria-hidden="true"></span>
+    </div>
+  `;
+}
+
+function renderSellerTextShell(extraClass = "") {
+  return `
+    <div
+      class="${`seller-text-group ${extraClass}`.trim()}"
+      data-movable-id="sellerText"
+      data-movable-label="Texte vendeur"
+    >
+      <p id="previewSellerBranch" class="seller-branch">SAINT-MARCEL</p>
+      <p id="previewSellerLegal" class="seller-copy">BigMat BMC</p>
+      <p id="previewSellerAddressLine1" class="seller-copy">25 rue Louis Alphonse Poitevin</p>
+      <p id="previewSellerAddressLine2" class="seller-copy">71380 Saint-Marcel, France</p>
+      <p id="previewSellerIdentityLine" class="seller-copy">Tél. 03 71 41 02 00</p>
+      <div class="bank-lines">
+        <span id="previewSellerBank1"></span>
+        <span id="previewSellerBank2"></span>
+      </div>
+    </div>
+  `;
+}
+
+function renderRecipientCardShell(extraClass = "") {
+  return `
+    <div
+      class="${`recipient-card ${extraClass}`.trim()}"
+      data-movable-id="clientBox"
+      data-movable-label="Bloc client"
+    >
+      <div
+        class="recipient-text-group"
+        data-movable-id="clientText"
+        data-movable-label="Texte client"
+      >
+        <p id="previewRecipientName">KACIAN ROSTAM</p>
+        <p id="previewRecipientStreet">6 rue Jacques Copeau</p>
+        <p>
+          <span id="previewRecipientPostalCode">71100</span>
+          <span id="previewRecipientCity">Chalon-sur-Saône</span>
+        </p>
+        <p id="previewRecipientPhone"></p>
+      </div>
+    </div>
+  `;
+}
+
+function renderDocumentBarShell(extraClass = "") {
+  return `
+    <section class="${`document-bar ${extraClass}`.trim()}">
+      <div
+        class="bar-center"
+        data-movable-id="docCenterText"
+        data-movable-label="Texte entête centre"
+      >
+        <strong id="previewDocumentType" class="document-type">FACTURE</strong>
+        <span class="document-number">
+          No <strong id="previewInvoiceNumber">20/283647</strong>
+        </span>
+      </div>
+      <div
+        class="bar-right"
+        data-movable-id="docRightText"
+        data-movable-label="Texte entête droite"
+      >
+        Le <strong id="previewInvoiceDate">10/07/2025</strong>
+      </div>
+    </section>
+  `;
+}
+
+function renderDocumentCardShell(extraClass = "") {
+  return `
+    <section
+      class="${`invoice-struct-card invoice-doc-card ${extraClass}`.trim()}"
+      data-movable-id="docCenterText"
+      data-movable-label="Bloc facture"
+    >
+      <div class="invoice-doc-card-body">
+        <strong id="previewDocumentType" class="document-type">FACTURE</strong>
+        <span class="document-number">No <strong id="previewInvoiceNumber">20/283647</strong></span>
+        <div
+          class="invoice-doc-card-date"
+          data-movable-id="docRightText"
+          data-movable-label="Texte date facture"
+        >
+          Le <strong id="previewInvoiceDate">10/07/2025</strong>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderInvoiceTableShell(extraClass = "") {
+  return `
+    <section class="${`table-shell ${extraClass}`.trim()}">
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Nom de l’article</th>
+            <th>Quantité</th>
+            <th>Tarif TTC</th>
+            <th>Montant TTC</th>
+          </tr>
+        </thead>
+        <tbody id="previewLineBody"></tbody>
+      </table>
+    </section>
+  `;
+}
+
+function renderDeliveryNoteShell(extraClass = "") {
+  return `
+    <p
+      id="previewDeliveryNote"
+      class="${`delivery-note ${extraClass}`.trim()}"
+      data-movable-id="deliveryText"
+      data-movable-label="Texte note"
+    >
+      Le 10/07/25 enlèvement dépôt Saint-Marcel
+    </p>
+  `;
+}
+
+function renderCanvasShell(extraClass = "", includeSignature = true) {
+  return `
+    <section class="${`invoice-canvas ${extraClass}`.trim()}">
+      <div
+        class="image-frame watermark-frame"
+        data-image-frame-id="watermarkFrame"
+        data-movable-id="watermarkFrame"
+        data-movable-label="Image centrale"
+        data-resizable-id="watermarkFrame"
+      >
+        <img
+          src="assets/bigmat-logo.svg"
+          alt="Filigrane BigMat"
+          id="previewWatermarkImage"
+        />
+        <span class="resize-handle" data-resize-handle aria-hidden="true"></span>
+      </div>
+      ${
+        includeSignature
+          ? `
+            <div
+              class="canvas-signature-box"
+              data-movable-id="signatureBox"
+              data-movable-label="Cadre signature"
+              aria-hidden="true"
+            ></div>
+          `
+          : ""
+      }
+      <span id="previewDueDateInline" class="visually-hidden">18/07/2025</span>
+    </section>
+  `;
+}
+
+function renderTotalsBandShell(extraClass = "") {
+  return `
+    <section
+      class="${`totals-band ${extraClass}`.trim()}"
+      data-movable-id="totalsText"
+      data-movable-label="Bloc totaux"
+    >
+      <div>
+        <span>Lignes</span>
+        <strong id="previewLineCount">0</strong>
+      </div>
+      <div>
+        <span>Total TTC</span>
+        <strong id="previewGrandTotal">0,00</strong>
+      </div>
+      <div>
+        <span>Acompte versé</span>
+        <strong id="previewDeposit">0,00</strong>
+      </div>
+      <div>
+        <span>Net à payer</span>
+        <strong id="previewBalanceDue">0,00</strong>
+      </div>
+    </section>
+  `;
+}
+
+function renderTotalsStackShell(extraClass = "") {
+  return `
+    <section
+      class="${`invoice-total-stack ${extraClass}`.trim()}"
+      data-movable-id="totalsText"
+      data-movable-label="Bloc totaux"
+    >
+      <div class="invoice-total-row">
+        <span>Lignes</span>
+        <strong id="previewLineCount">0</strong>
+      </div>
+      <div class="invoice-total-row">
+        <span>Total TTC</span>
+        <strong id="previewGrandTotal">0,00</strong>
+      </div>
+      <div class="invoice-total-row">
+        <span>Acompte versé</span>
+        <strong id="previewDeposit">0,00</strong>
+      </div>
+      <div class="invoice-total-row invoice-total-row--accent">
+        <span>Net à payer</span>
+        <strong id="previewBalanceDue">0,00</strong>
+      </div>
+    </section>
+  `;
+}
+
+function renderFooterShell(extraClass = "") {
+  return `
+    <footer class="${`invoice-footer ${extraClass}`.trim()}">
+      <div
+        class="due-date-line"
+        data-movable-id="dueDateText"
+        data-movable-label="Texte échéance"
+      >
+        DATE D’ÉCHÉANCE : <strong id="previewDueDate">18/07/2025</strong>
+      </div>
+      <p
+        class="insurance-panel"
+        id="previewInsuranceNote"
+        data-movable-id="footerText"
+        data-movable-label="Texte bas de page"
+      >
+        Paiement par virement à réception de facture.
+      </p>
+    </footer>
+    <p
+      id="previewPaymentNote"
+      class="payment-note"
+      data-movable-id="legalText"
+      data-movable-label="Texte mentions"
+    >
+      Conditions générales de vente et de versement applicables selon l’offre,
+      l’acceptation et la date d’échéance.
+    </p>
+  `;
+}
+
+function renderClassicDocumentTemplate() {
+  return `
+    <header class="invoice-top">
+      <div class="brand-block">
+        ${renderLogoFrameShell()}
+        ${renderSellerTextShell()}
+      </div>
+      <div class="recipient-block">
+        ${renderBannerFrameShell()}
+        ${renderRecipientCardShell()}
+      </div>
+    </header>
+
+    <section
+      class="invoice-core"
+      data-movable-id="coreBox"
+      data-movable-label="Grand bloc"
+    >
+      ${renderDocumentBarShell()}
+      ${renderInvoiceTableShell()}
+      ${renderDeliveryNoteShell()}
+      ${renderCanvasShell()}
+      ${renderTotalsBandShell()}
+    </section>
+
+    ${renderFooterShell()}
+  `;
+}
+
+function renderBannerStatementTemplate() {
+  return `
+    <section class="invoice-banner-shell">
+      <div class="invoice-banner-hero">
+        ${renderBannerFrameShell("statement-banner-frame")}
+        <div class="invoice-banner-brandline">
+          ${renderLogoFrameShell("statement-logo-frame")}
+          ${renderDocumentCardShell("statement-doc-card")}
+        </div>
+      </div>
+
+      <div class="invoice-banner-meta-grid">
+        <section
+          class="invoice-struct-card statement-seller-panel"
+          data-movable-id="sellerBox"
+          data-movable-label="Bloc vendeur"
+        >
+          ${renderSellerTextShell()}
+        </section>
+        ${renderRecipientCardShell("statement-client-panel")}
+      </div>
+
+      <section
+        class="invoice-struct-card statement-lines-panel"
+        data-movable-id="coreBox"
+        data-movable-label="Bloc lignes"
+      >
+        ${renderInvoiceTableShell()}
+        ${renderDeliveryNoteShell()}
+      </section>
+
+      <div class="invoice-banner-bottom-grid">
+        ${renderCanvasShell("statement-canvas")}
+        ${renderTotalsStackShell("statement-total-stack")}
+      </div>
+    </section>
+
+    ${renderFooterShell("statement-footer")}
+  `;
+}
+
+function renderSidebarLedgerTemplate() {
+  return `
+    <div class="invoice-ledger-shell">
+      <aside
+        class="invoice-ledger-sidebar"
+        data-movable-id="sellerBox"
+        data-movable-label="Colonne vendeur"
+      >
+        ${renderLogoFrameShell("ledger-logo-frame")}
+        ${renderSellerTextShell("ledger-seller-copy")}
+        ${renderBannerFrameShell("ledger-banner-frame")}
+        ${renderTotalsStackShell("ledger-total-stack")}
+      </aside>
+
+      <div class="invoice-ledger-main">
+        ${renderDocumentBarShell("ledger-document-bar")}
+        ${renderRecipientCardShell("ledger-client-card")}
+        <section
+          class="invoice-struct-card ledger-lines-card"
+          data-movable-id="coreBox"
+          data-movable-label="Bloc lignes"
+        >
+          ${renderInvoiceTableShell()}
+          ${renderDeliveryNoteShell()}
+          ${renderCanvasShell("ledger-canvas")}
+        </section>
+        ${renderFooterShell("ledger-footer")}
+      </div>
+    </div>
+  `;
+}
+
+function renderServiceDispatchTemplate() {
+  return `
+    <div class="invoice-dispatch-shell">
+      <div class="invoice-dispatch-top">
+        <section
+          class="invoice-struct-card dispatch-service-card"
+          data-movable-id="docRightText"
+          data-movable-label="Bloc intervention"
+        >
+          <span class="dispatch-eyebrow">Intervention</span>
+          ${renderDeliveryNoteShell("dispatch-delivery-note")}
+          <div class="dispatch-service-meta">
+            Le <strong id="previewInvoiceDate">10/07/2025</strong>
+          </div>
+        </section>
+        <section class="invoice-struct-card dispatch-title-card">
+          ${renderLogoFrameShell("dispatch-logo-frame")}
+          <div
+            class="dispatch-title-block"
+            data-movable-id="docCenterText"
+            data-movable-label="Bloc facture"
+          >
+            <strong id="previewDocumentType" class="document-type">FACTURE</strong>
+            <span class="document-number">No <strong id="previewInvoiceNumber">20/283647</strong></span>
+          </div>
+          ${renderBannerFrameShell("dispatch-banner-frame")}
+        </section>
+      </div>
+
+      <div class="invoice-dispatch-meta-grid">
+        <section
+          class="invoice-struct-card dispatch-seller-panel"
+          data-movable-id="sellerBox"
+          data-movable-label="Bloc vendeur"
+        >
+          ${renderSellerTextShell()}
+        </section>
+        ${renderRecipientCardShell("dispatch-client-panel")}
+      </div>
+
+      <section
+        class="invoice-struct-card dispatch-lines-panel"
+        data-movable-id="coreBox"
+        data-movable-label="Bloc lignes"
+      >
+        ${renderInvoiceTableShell()}
+      </section>
+
+      <div class="invoice-dispatch-bottom">
+        ${renderCanvasShell("dispatch-canvas")}
+        ${renderTotalsStackShell("dispatch-total-stack")}
+      </div>
+    </div>
+
+    ${renderFooterShell("dispatch-footer")}
+  `;
+}
+
+function renderCardDeckTemplate() {
+  return `
+    <div class="invoice-carddeck-shell">
+      <div class="invoice-carddeck-top">
+        ${renderLogoFrameShell("carddeck-logo-frame")}
+        ${renderDocumentCardShell("carddeck-doc-card")}
+        ${renderBannerFrameShell("carddeck-banner-frame")}
+      </div>
+
+      <div class="invoice-carddeck-grid">
+        <section
+          class="invoice-struct-card carddeck-seller-panel"
+          data-movable-id="sellerBox"
+          data-movable-label="Bloc vendeur"
+        >
+          ${renderSellerTextShell()}
+        </section>
+        ${renderRecipientCardShell("carddeck-client-panel")}
+        ${renderTotalsStackShell("carddeck-total-panel")}
+        <section
+          class="invoice-struct-card carddeck-lines-panel"
+          data-movable-id="coreBox"
+          data-movable-label="Bloc lignes"
+        >
+          ${renderInvoiceTableShell()}
+          ${renderDeliveryNoteShell()}
+        </section>
+        <section class="invoice-struct-card carddeck-canvas-panel">
+          ${renderCanvasShell("carddeck-canvas")}
+        </section>
+      </div>
+    </div>
+
+    ${renderFooterShell("carddeck-footer")}
+  `;
+}
+
+function renderTicketSlipTemplate() {
+  return `
+    <div class="invoice-ticket-shell">
+      <div class="invoice-ticket-top">
+        ${renderLogoFrameShell("ticket-logo-frame")}
+        ${renderDocumentCardShell("ticket-doc-card")}
+      </div>
+
+      <div class="invoice-ticket-strip">
+        <section
+          class="invoice-struct-card ticket-seller-panel"
+          data-movable-id="sellerBox"
+          data-movable-label="Bloc vendeur"
+        >
+          ${renderSellerTextShell()}
+        </section>
+        ${renderRecipientCardShell("ticket-client-panel")}
+        ${renderBannerFrameShell("ticket-banner-frame")}
+      </div>
+
+      <section
+        class="invoice-struct-card ticket-lines-panel"
+        data-movable-id="coreBox"
+        data-movable-label="Bloc lignes"
+      >
+        ${renderInvoiceTableShell()}
+        ${renderDeliveryNoteShell()}
+      </section>
+
+      <div class="invoice-ticket-bottom">
+        ${renderTotalsBandShell("ticket-totals-band")}
+        ${renderCanvasShell("ticket-canvas")}
+      </div>
+    </div>
+
+    ${renderFooterShell("ticket-footer")}
+  `;
+}
+
+function renderRetailTriptychTemplate() {
+  return `
+    <div class="invoice-triptych-shell">
+      <div class="invoice-triptych-header">
+        ${renderLogoFrameShell("triptych-logo-frame")}
+        ${renderDocumentCardShell("triptych-doc-card")}
+        ${renderBannerFrameShell("triptych-banner-frame")}
+      </div>
+
+      <div class="invoice-triptych-grid">
+        <section
+          class="invoice-meta-card triptych-meta-card"
+          data-movable-id="docRightText"
+          data-movable-label="Bloc infos facture"
+        >
+          <span class="meta-card-label">Informations facture</span>
+          <p><strong>Numéro</strong> <span id="previewInvoiceNumber">20/283647</span></p>
+          <p><strong>Date</strong> <span id="previewInvoiceDate">10/07/2025</span></p>
+          <p><strong>Type</strong> <span id="previewDocumentType">FACTURE</span></p>
+        </section>
+        <section
+          class="invoice-meta-card triptych-seller-card"
+          data-movable-id="sellerBox"
+          data-movable-label="Bloc vendeur"
+        >
+          <span class="meta-card-label">Adresse de facturation</span>
+          ${renderSellerTextShell()}
+        </section>
+        ${renderRecipientCardShell("triptych-client-card")}
+      </div>
+
+      <section
+        class="invoice-struct-card triptych-lines-panel"
+        data-movable-id="coreBox"
+        data-movable-label="Bloc lignes"
+      >
+        ${renderInvoiceTableShell()}
+        ${renderDeliveryNoteShell()}
+      </section>
+
+      <div class="invoice-triptych-summary">
+        ${renderCanvasShell("triptych-canvas")}
+        ${renderTotalsStackShell("triptych-total-stack")}
+      </div>
+    </div>
+
+    ${renderFooterShell("triptych-footer")}
+  `;
+}
+
+function renderStudioLetterTemplate() {
+  return `
+    <div class="invoice-studio-shell">
+      <div class="invoice-studio-head">
+        ${renderLogoFrameShell("studio-logo-frame")}
+        ${renderDocumentCardShell("studio-doc-card")}
+        ${renderBannerFrameShell("studio-banner-frame")}
+      </div>
+
+      <div class="invoice-studio-columns">
+        <section
+          class="invoice-struct-card studio-seller-panel"
+          data-movable-id="sellerBox"
+          data-movable-label="Bloc vendeur"
+        >
+          ${renderSellerTextShell()}
+        </section>
+        ${renderRecipientCardShell("studio-client-panel")}
+      </div>
+
+      <section
+        class="invoice-struct-card studio-lines-panel"
+        data-movable-id="coreBox"
+        data-movable-label="Bloc lignes"
+      >
+        ${renderInvoiceTableShell()}
+        ${renderDeliveryNoteShell()}
+      </section>
+
+      <div class="invoice-studio-bottom">
+        ${renderCanvasShell("studio-canvas")}
+        ${renderTotalsStackShell("studio-total-stack")}
+      </div>
+    </div>
+
+    ${renderFooterShell("studio-footer")}
+  `;
+}
+
 function renderPreview() {
   ensureImageSources();
   ensureImageFrameSizes();
+  ensureLayoutOffsets();
   state.designPreset = sanitizeDesignPreset(state.designPreset);
 
   const computedLines = state.lines.map((line) => computeLine(line));
@@ -716,6 +1464,7 @@ function renderPreview() {
   const deposit = sanitizeNumber(state.deposit);
   const balanceDue = roundTo(grandTotal - deposit, 2);
 
+  renderInvoiceTemplate();
   elements.invoiceSheet.dataset.designPreset = state.designPreset;
   elements.headlineTotal.textContent = formatCurrency(grandTotal);
   renderPreviewImage(
@@ -730,41 +1479,50 @@ function renderPreview() {
   );
   renderPreviewImage(elements.previewWatermarkImage, "watermarkFrame", "Visuel central");
 
-  elements.previewSellerBranch.textContent = state.sellerBranch || "SAINT-MARCEL";
-  elements.previewSellerCategories.setAttribute(
+  setPreviewText("#previewSellerBranch", state.sellerBranch || "SAINT-MARCEL");
+  setPreviewAttribute(
+    "#previewSellerCategories",
     "title",
     state.sellerCategories || "Gros oeuvre · Bricolage · Bois · Peinture",
   );
-  elements.previewSellerLegal.textContent = state.sellerLegal || "BigMat BMC";
-  elements.previewSellerAddressLine1.textContent =
-    state.sellerAddressLine1 || "25 rue Louis Alphonse Poitevin";
-  elements.previewSellerAddressLine2.textContent =
-    state.sellerAddressLine2 || "71380 Saint-Marcel, France";
-  elements.previewSellerIdentityLine.textContent =
-    state.sellerIdentityLine || "Tél. 03 71 41 02 00";
-  elements.previewSellerBank1.textContent = state.sellerBank1 || "";
-  elements.previewSellerBank2.textContent = state.sellerBank2 || "";
-  elements.previewBankLines.hidden = !(state.sellerBank1.trim() || state.sellerBank2.trim());
+  setPreviewText("#previewSellerLegal", state.sellerLegal || "BigMat BMC");
+  setPreviewText(
+    "#previewSellerAddressLine1",
+    state.sellerAddressLine1 || "25 rue Louis Alphonse Poitevin",
+  );
+  setPreviewText(
+    "#previewSellerAddressLine2",
+    state.sellerAddressLine2 || "71380 Saint-Marcel, France",
+  );
+  setPreviewText(
+    "#previewSellerIdentityLine",
+    state.sellerIdentityLine || "Tél. 03 71 41 02 00",
+  );
+  setPreviewText("#previewSellerBank1", state.sellerBank1 || "");
+  setPreviewText("#previewSellerBank2", state.sellerBank2 || "");
+  if (elements.previewBankLines) {
+    elements.previewBankLines.hidden = !(state.sellerBank1.trim() || state.sellerBank2.trim());
+  }
 
-  elements.previewRecipientName.textContent = state.recipientName || "NOM CLIENT";
-  elements.previewRecipientStreet.textContent = state.recipientStreet || "RUE CLIENT";
-  elements.previewRecipientPostalCode.textContent = state.recipientPostalCode || "71100";
-  elements.previewRecipientCity.textContent = state.recipientCity || "VILLE";
-  elements.previewRecipientPhone.textContent = state.recipientPhone || "";
-  elements.previewRecipientPhone.hidden = !state.recipientPhone.trim();
+  setPreviewText("#previewRecipientName", state.recipientName || "NOM CLIENT");
+  setPreviewText("#previewRecipientStreet", state.recipientStreet || "RUE CLIENT");
+  setPreviewText("#previewRecipientPostalCode", state.recipientPostalCode || "71100");
+  setPreviewText("#previewRecipientCity", state.recipientCity || "VILLE");
+  setPreviewText("#previewRecipientPhone", state.recipientPhone || "");
+  setPreviewHidden("#previewRecipientPhone", !state.recipientPhone.trim());
 
-  elements.previewDocumentType.textContent = (state.documentType || "Facture").toUpperCase();
-  elements.previewInvoiceNumber.textContent = state.invoiceNumber || "-";
-  elements.previewInvoiceDate.textContent = formatDate(state.invoiceDate);
-  elements.previewDeliveryNote.textContent = state.deliveryNote || "";
-  elements.previewDueDateInline.textContent = formatDate(state.dueDate);
-  elements.previewLineCount.textContent = String(computedLines.length);
-  elements.previewGrandTotal.textContent = formatAmount(grandTotal);
-  elements.previewDeposit.textContent = formatAmount(deposit);
-  elements.previewBalanceDue.textContent = formatAmount(balanceDue);
-  elements.previewDueDate.textContent = formatDate(state.dueDate);
-  elements.previewInsuranceNote.textContent = state.insuranceNote || "";
-  elements.previewPaymentNote.textContent = state.paymentNote || "";
+  setPreviewText("#previewDocumentType", (state.documentType || "Facture").toUpperCase());
+  setPreviewText("#previewInvoiceNumber", state.invoiceNumber || "-");
+  setPreviewText("#previewInvoiceDate", formatDate(state.invoiceDate));
+  setPreviewText("#previewDeliveryNote", state.deliveryNote || "");
+  setPreviewText("#previewDueDateInline", formatDate(state.dueDate));
+  setPreviewText("#previewLineCount", String(computedLines.length));
+  setPreviewText("#previewGrandTotal", formatAmount(grandTotal));
+  setPreviewText("#previewDeposit", formatAmount(deposit));
+  setPreviewText("#previewBalanceDue", formatAmount(balanceDue));
+  setPreviewText("#previewDueDate", formatDate(state.dueDate));
+  setPreviewText("#previewInsuranceNote", state.insuranceNote || "");
+  setPreviewText("#previewPaymentNote", state.paymentNote || "");
 
   renderPreviewLines(computedLines);
 }
@@ -772,6 +1530,7 @@ function renderPreview() {
 function renderLayoutEditor() {
   ensureLayoutOffsets();
   ensureImageFrameSizes();
+  const activeOffsets = getActiveLayoutOffsets();
 
   elements.invoiceSheet.classList.toggle("is-layout-editing", layoutEditMode);
   elements.toggleLayoutButton.textContent = layoutEditMode
@@ -779,7 +1538,7 @@ function renderLayoutEditor() {
     : "Déplacer / redimensionner";
 
   Object.entries(elements.movableBoxMap).forEach(([id, node]) => {
-    const offset = state.layoutOffsets[id] || { x: 0, y: 0 };
+    const offset = activeOffsets[id] || { x: 0, y: 0 };
     node.style.setProperty("--move-x", `${offset.x}px`);
     node.style.setProperty("--move-y", `${offset.y}px`);
     node.classList.toggle("is-selected", layoutEditMode && activeMovableId === id);
@@ -800,7 +1559,7 @@ function handleMovablePointerDown(event) {
       event.preventDefault();
 
       const frameId = frame.dataset.resizableId;
-      const currentSize = state.imageFrameSizes[frameId] || defaultImageFrameSizes[frameId];
+      const currentSize = getActiveImageFrameSizes()[frameId] || defaultImageFrameSizes[frameId];
 
       activeMovableId = frameId;
       dragState = null;
@@ -833,7 +1592,7 @@ function handleMovablePointerDown(event) {
   event.preventDefault();
 
   const movableId = movable.dataset.movableId;
-  const origin = state.layoutOffsets[movableId] || { x: 0, y: 0 };
+  const origin = getActiveLayoutOffsets()[movableId] || { x: 0, y: 0 };
 
   activeMovableId = movableId;
   dragState = {
@@ -863,7 +1622,7 @@ function handleMovablePointerMove(event) {
       resizeState.limits.maxHeight,
     );
 
-    state.imageFrameSizes[resizeState.frameId] = {
+    getActiveImageFrameSizes()[resizeState.frameId] = {
       width: nextWidth,
       height: nextHeight,
     };
@@ -880,7 +1639,7 @@ function handleMovablePointerMove(event) {
   const nextX = clamp(rawX, dragState.bounds.minX, dragState.bounds.maxX);
   const nextY = clamp(rawY, dragState.bounds.minY, dragState.bounds.maxY);
 
-  state.layoutOffsets[dragState.movableId] = { x: nextX, y: nextY };
+  getActiveLayoutOffsets()[dragState.movableId] = { x: nextX, y: nextY };
   applyMovableOffset(dragState.movableId);
 }
 
@@ -909,7 +1668,7 @@ function applyMovableOffset(movableId) {
     return;
   }
 
-  const offset = state.layoutOffsets[movableId] || { x: 0, y: 0 };
+  const offset = getActiveLayoutOffsets()[movableId] || { x: 0, y: 0 };
   node.style.setProperty("--move-x", `${offset.x}px`);
   node.style.setProperty("--move-y", `${offset.y}px`);
 }
@@ -920,12 +1679,16 @@ function applyImageFrameSize(frameId) {
     return;
   }
 
-  const size = state.imageFrameSizes[frameId] || defaultImageFrameSizes[frameId];
+  const size = getActiveImageFrameSizes()[frameId] || defaultImageFrameSizes[frameId];
   node.style.setProperty("--frame-width", `${size.width}px`);
   node.style.setProperty("--frame-height", `${size.height}px`);
 }
 
 function renderPreviewLines(lines) {
+  if (!elements.previewLineBody) {
+    return;
+  }
+
   elements.previewLineBody.innerHTML = "";
 
   if (lines.length === 0) {
@@ -1125,6 +1888,11 @@ function extractInvoiceData(rawText) {
 }
 
 function extractRecipientBlock(lines) {
+  const labeledRecipient = extractLabeledRecipientBlock(lines);
+  if (labeledRecipient) {
+    return labeledRecipient;
+  }
+
   const invoiceIndex = lines.findIndex((line) => /FACTURE/i.test(line));
 
   for (let index = 0; index < Math.max(invoiceIndex, 0); index += 1) {
@@ -1151,6 +1919,83 @@ function extractRecipientBlock(lines) {
   }
 
   return {};
+}
+
+function extractLabeledRecipientBlock(lines) {
+  const labelPatterns = [
+    /FACTURER?\s+[ÀA]/i,
+    /ADRESSE DE FACTURATION/i,
+    /ADRESSE CLIENT/i,
+    /DESTINATAIRE/i,
+    /^CLIENT\b/i,
+  ];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (!labelPatterns.some((pattern) => pattern.test(line))) {
+      continue;
+    }
+
+    const blockLines = [];
+    const inlineValue = line.split(":").slice(1).join(":").trim();
+    if (inlineValue) {
+      blockLines.push(inlineValue);
+    }
+
+    for (let cursor = index + 1; cursor < lines.length && blockLines.length < 5; cursor += 1) {
+      const nextLine = lines[cursor];
+
+      if (
+        !nextLine
+        || /FACTURE|DATE|ECHEANCE|ÉCHÉANCE|DESCRIPTION|ARTICLE|DESIGNATION|D[ÉE]SIGNATION|TOTAL/i.test(
+          nextLine,
+        )
+      ) {
+        break;
+      }
+
+      blockLines.push(nextLine);
+    }
+
+    const recipient = buildRecipientFromBlock(blockLines);
+    if (recipient.recipientName) {
+      return recipient;
+    }
+  }
+
+  return null;
+}
+
+function buildRecipientFromBlock(lines) {
+  const cleanedLines = lines
+    .map((line) => line.replace(/^[•·\-–—\s]+/, "").trim())
+    .filter(Boolean);
+
+  if (cleanedLines.length < 2) {
+    return {};
+  }
+
+  const phoneLine = cleanedLines.find(looksLikePhoneNumber) || "";
+  const contentLines = cleanedLines.filter((line) => line !== phoneLine);
+  const postalIndex = contentLines.findIndex(looksLikePostal);
+  const name = contentLines[0] || "";
+  const postalLine = postalIndex >= 0 ? contentLines[postalIndex] : "";
+  const streetLines = postalIndex > 1
+    ? contentLines.slice(1, postalIndex)
+    : contentLines.slice(1, postalLine ? 2 : 3);
+  const street = streetLines.join(", ").trim() || contentLines[1] || "";
+
+  if (!name || (!street && !postalLine)) {
+    return {};
+  }
+
+  return {
+    recipientName: name,
+    recipientStreet: street,
+    recipientPostalCode: extractPostalCode(postalLine),
+    recipientCity: extractCity(postalLine),
+    recipientPhone: phoneLine,
+  };
 }
 
 function extractInvoiceLines(lines) {
@@ -1570,11 +2415,17 @@ function looksLikeRecipientName(value) {
 }
 
 function looksLikeStreet(value) {
-  return /\b(RUE|AVENUE|CHAUSS[ÉE]E|BOULEVARD|STRAAT|STREET|ROAD)\b/i.test(value);
+  return /\b(RUE|ROUTE|AVENUE|CHEMIN|IMPASSE|ALLEE|ALL[ÉE]E|BOULEVARD|QUAI|PLACE|LOTISSEMENT|STRAAT|STREET|ROAD)\b/i.test(
+    value,
+  );
 }
 
 function looksLikePostal(value) {
   return /\b(?:[A-Z]-)?\d{4,5}\b/.test(value);
+}
+
+function looksLikePhoneNumber(value) {
+  return /(TEL|T[ÉE]L|PHONE|PORTABLE|MOBILE|GSM|FIXE|\+\d{2}|0\d(?:[\s.-]?\d){7,})/i.test(value);
 }
 
 function extractPostalCode(value) {
@@ -1631,12 +2482,14 @@ function loadState() {
     }
 
     const parsed = JSON.parse(stored);
+    const parsedPreset = sanitizeDesignPreset(parsed.designPreset);
     const nextState = {
       ...cloneState(defaultState),
       ...parsed,
+      designPreset: parsedPreset,
       imageSources: cloneImageSources(parsed.imageSources),
-      imageFrameSizes: cloneImageFrameSizes(parsed.imageFrameSizes),
-      layoutOffsets: cloneLayoutOffsets(parsed.layoutOffsets),
+      imageFrameSizes: createImageFrameSizeStore(parsedPreset, parsed.imageFrameSizes),
+      layoutOffsets: createLayoutOffsetStore(parsedPreset, parsed.layoutOffsets),
       lines: Array.isArray(parsed.lines) && parsed.lines.length > 0
         ? parsed.lines.map((line) => createLine(line))
         : cloneState(defaultState).lines,
@@ -1644,8 +2497,8 @@ function loadState() {
 
     if (parsed.layoutVersion !== LAYOUT_VERSION) {
       nextState.layoutVersion = LAYOUT_VERSION;
-      nextState.layoutOffsets = cloneLayoutOffsets(defaultLayoutOffsets);
-      nextState.imageFrameSizes = cloneImageFrameSizes(defaultImageFrameSizes);
+      nextState.layoutOffsets = createLayoutOffsetStore(nextState.designPreset);
+      nextState.imageFrameSizes = createImageFrameSizeStore(nextState.designPreset);
     }
 
     if (nextState.insuranceNote === LEGACY_INSURANCE_NOTE) {
@@ -1674,11 +2527,14 @@ function saveState() {
 }
 
 function cloneState(source) {
+  const designPreset = sanitizeDesignPreset(source.designPreset);
+
   return {
     ...source,
+    designPreset,
     imageSources: cloneImageSources(source.imageSources),
-    imageFrameSizes: cloneImageFrameSizes(source.imageFrameSizes),
-    layoutOffsets: cloneLayoutOffsets(source.layoutOffsets),
+    imageFrameSizes: createImageFrameSizeStore(designPreset, source.imageFrameSizes),
+    layoutOffsets: createLayoutOffsetStore(designPreset, source.layoutOffsets),
     lines: source.lines.map((line) => createLine(line)),
   };
 }
@@ -1718,6 +2574,54 @@ function cloneImageSources(source = defaultImageSources) {
   };
 }
 
+function createLayoutOffsetStore(activePreset = defaultDesignPreset, source = null) {
+  const sanitizedPreset = sanitizeDesignPreset(activePreset);
+  const legacySource = looksLikeLegacyLayoutOffsets(source) ? source : null;
+
+  return Object.fromEntries(
+    designPresets.map((preset) => {
+      const presetSource =
+        preset.id === sanitizedPreset && legacySource
+          ? legacySource
+          : source?.[preset.id];
+
+      return [preset.id, cloneLayoutOffsets(presetSource)];
+    }),
+  );
+}
+
+function createImageFrameSizeStore(activePreset = defaultDesignPreset, source = null) {
+  const sanitizedPreset = sanitizeDesignPreset(activePreset);
+  const legacySource = looksLikeLegacyImageFrameSizes(source) ? source : null;
+
+  return Object.fromEntries(
+    designPresets.map((preset) => {
+      const presetSource =
+        preset.id === sanitizedPreset && legacySource
+          ? legacySource
+          : source?.[preset.id];
+
+      return [preset.id, cloneImageFrameSizes(presetSource, preset.id)];
+    }),
+  );
+}
+
+function looksLikeLegacyLayoutOffsets(source) {
+  return Boolean(
+    source
+      && typeof source === "object"
+      && Object.keys(defaultLayoutOffsets).some((key) => key in source),
+  );
+}
+
+function looksLikeLegacyImageFrameSizes(source) {
+  return Boolean(
+    source
+      && typeof source === "object"
+      && Object.keys(defaultImageFrameSizes).some((key) => key in source),
+  );
+}
+
 function resolveImageSource(frameId) {
   const source = state.imageSources?.[frameId];
   if (source === null) {
@@ -1731,6 +2635,24 @@ function sanitizeDesignPreset(value) {
   return designPresets.some((preset) => preset.id === value) ? value : defaultDesignPreset;
 }
 
+function getActiveLayoutOffsets() {
+  const preset = sanitizeDesignPreset(state.designPreset);
+  if (!state.layoutOffsets?.[preset]) {
+    ensureLayoutOffsets();
+  }
+
+  return state.layoutOffsets[preset];
+}
+
+function getActiveImageFrameSizes() {
+  const preset = sanitizeDesignPreset(state.designPreset);
+  if (!state.imageFrameSizes?.[preset]) {
+    ensureImageFrameSizes();
+  }
+
+  return state.imageFrameSizes[preset];
+}
+
 function readPresetFromUrl() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -1741,28 +2663,30 @@ function readPresetFromUrl() {
   }
 }
 
-function cloneImageFrameSizes(source = defaultImageFrameSizes) {
+function cloneImageFrameSizes(source = null, presetId = defaultDesignPreset) {
+  const defaults = getDefaultImageFrameSizes(presetId);
+
   return Object.fromEntries(
     Object.entries(defaultImageFrameSizes).map(([id, fallback]) => {
-      const size = source?.[id] || fallback;
+      const presetFallback = defaults[id] || fallback;
+      const size = source?.[id] || presetFallback;
       return [
         id,
         {
-          width: sanitizeSizeValue(size.width, fallback.width),
-          height: sanitizeSizeValue(size.height, fallback.height),
+          width: sanitizeSizeValue(size.width, presetFallback.width),
+          height: sanitizeSizeValue(size.height, presetFallback.height),
         },
       ];
     }),
   );
 }
 
-function ensureLayoutOffsets() {
-  if (!state.layoutOffsets) {
-    state.layoutOffsets = cloneLayoutOffsets(defaultLayoutOffsets);
-    return;
-  }
+function getDefaultImageFrameSizes(presetId = defaultDesignPreset) {
+  return presetImageFrameSizes[sanitizeDesignPreset(presetId)] || defaultImageFrameSizes;
+}
 
-  state.layoutOffsets = cloneLayoutOffsets(state.layoutOffsets);
+function ensureLayoutOffsets() {
+  state.layoutOffsets = createLayoutOffsetStore(state.designPreset, state.layoutOffsets);
 }
 
 function ensureImageSources() {
@@ -1770,7 +2694,25 @@ function ensureImageSources() {
 }
 
 function ensureImageFrameSizes() {
-  state.imageFrameSizes = cloneImageFrameSizes(state.imageFrameSizes);
+  state.imageFrameSizes = createImageFrameSizeStore(state.designPreset, state.imageFrameSizes);
+}
+
+function setPreviewText(selector, value) {
+  elements.invoiceSheet?.querySelectorAll(selector).forEach((node) => {
+    node.textContent = value;
+  });
+}
+
+function setPreviewHidden(selector, hidden) {
+  elements.invoiceSheet?.querySelectorAll(selector).forEach((node) => {
+    node.hidden = hidden;
+  });
+}
+
+function setPreviewAttribute(selector, attribute, value) {
+  elements.invoiceSheet?.querySelectorAll(selector).forEach((node) => {
+    node.setAttribute(attribute, value);
+  });
 }
 
 function sanitizeNumericInput(value) {

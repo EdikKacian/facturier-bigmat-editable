@@ -822,6 +822,416 @@ img {
   z-index: 1;
 }
 
+.invoice-struct-card,
+.invoice-meta-card,
+.invoice-total-stack {
+  border: 1px solid var(--core-border);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: var(--recipient-shadow);
+}
+
+.invoice-struct-card,
+.invoice-meta-card {
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.invoice-meta-card {
+  display: grid;
+  gap: 8px;
+}
+
+.invoice-meta-card p {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.meta-card-label,
+.dispatch-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(50, 50, 124, 0.08);
+  color: var(--accent-blue);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.invoice-doc-card {
+  padding: 18px 20px;
+}
+
+.invoice-doc-card-body {
+  display: grid;
+  gap: 10px;
+}
+
+.invoice-doc-card-date {
+  justify-self: end;
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
+  font-size: 0.74rem;
+}
+
+.invoice-total-stack {
+  display: grid;
+  gap: 0;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: var(--totals-band-bg);
+  align-self: start;
+}
+
+.invoice-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--totals-cell-border);
+}
+
+.invoice-total-row:last-child {
+  border-bottom: 0;
+}
+
+.invoice-total-row span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--totals-label-color);
+}
+
+.invoice-total-row strong {
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
+  font-size: 0.88rem;
+  color: var(--totals-strong-color);
+}
+
+.invoice-total-row--accent {
+  margin-top: 4px;
+  padding-top: 14px;
+}
+
+.invoice-total-row--accent span,
+.invoice-total-row--accent strong {
+  color: var(--accent-blue);
+}
+
+.invoice-template--banner-statement .invoice-banner-shell,
+.invoice-template--service-dispatch .invoice-dispatch-shell,
+.invoice-template--card-deck .invoice-carddeck-shell,
+.invoice-template--ticket-slip .invoice-ticket-shell,
+.invoice-template--retail-triptych .invoice-triptych-shell,
+.invoice-template--studio-letter .invoice-studio-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.invoice-template--banner-statement .invoice-banner-hero {
+  display: grid;
+  gap: 16px;
+}
+
+.invoice-template--banner-statement .statement-banner-frame {
+  justify-self: end;
+}
+
+.invoice-template--banner-statement .invoice-banner-brandline {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.invoice-template--banner-statement .statement-doc-card {
+  min-height: 118px;
+}
+
+.invoice-template--banner-statement .invoice-banner-meta-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.82fr);
+  gap: 18px;
+}
+
+.invoice-template--banner-statement .statement-lines-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.invoice-template--banner-statement .invoice-banner-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.invoice-template--banner-statement .statement-canvas {
+  min-height: 320px;
+  border: 1px solid var(--core-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.invoice-template--sidebar-ledger .invoice-ledger-shell {
+  display: grid;
+  grid-template-columns: minmax(226px, 0.68fr) minmax(0, 1.32fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.invoice-template--sidebar-ledger .invoice-ledger-sidebar {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(63, 98, 150, 0.08), rgba(63, 98, 150, 0.02));
+  border: 1px solid rgba(63, 98, 150, 0.22);
+}
+
+.invoice-template--sidebar-ledger .ledger-banner-frame,
+.invoice-template--sidebar-ledger .ledger-logo-frame {
+  justify-self: start;
+}
+
+.invoice-template--sidebar-ledger .invoice-ledger-main {
+  display: grid;
+  gap: 16px;
+}
+
+.invoice-template--sidebar-ledger .ledger-lines-card {
+  display: grid;
+  gap: 10px;
+}
+
+.invoice-template--sidebar-ledger .ledger-canvas {
+  min-height: 280px;
+  margin-top: 6px;
+  border-top: 1px solid var(--table-line);
+}
+
+.invoice-template--service-dispatch .invoice-dispatch-top {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.28fr);
+  gap: 18px;
+}
+
+.invoice-template--service-dispatch .dispatch-service-card,
+.invoice-template--service-dispatch .dispatch-title-card {
+  min-height: 132px;
+}
+
+.invoice-template--service-dispatch .dispatch-title-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.invoice-template--service-dispatch .dispatch-title-block {
+  display: grid;
+  gap: 8px;
+}
+
+.invoice-template--service-dispatch .dispatch-service-meta {
+  margin-top: auto;
+  padding-top: 14px;
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
+  font-size: 0.72rem;
+}
+
+.invoice-template--service-dispatch .invoice-dispatch-meta-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(240px, 1.1fr);
+  gap: 18px;
+}
+
+.invoice-template--service-dispatch .dispatch-lines-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.invoice-template--service-dispatch .invoice-dispatch-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(240px, 0.82fr);
+  gap: 18px;
+}
+
+.invoice-template--service-dispatch .dispatch-canvas {
+  min-height: 286px;
+  border: 1px solid var(--core-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.invoice-template--card-deck .invoice-carddeck-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.invoice-template--card-deck .invoice-carddeck-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.invoice-template--card-deck .carddeck-seller-panel,
+.invoice-template--card-deck .carddeck-client-panel,
+.invoice-template--card-deck .carddeck-total-panel,
+.invoice-template--card-deck .carddeck-lines-panel,
+.invoice-template--card-deck .carddeck-canvas-panel {
+  min-height: 120px;
+}
+
+.invoice-template--card-deck .carddeck-lines-panel {
+  grid-column: 1;
+  display: grid;
+  gap: 10px;
+}
+
+.invoice-template--card-deck .carddeck-canvas-panel {
+  grid-column: 2;
+  padding: 0;
+  overflow: hidden;
+}
+
+.invoice-template--card-deck .carddeck-canvas {
+  min-height: 100%;
+}
+
+.invoice-template--card-deck .carddeck-total-panel {
+  background: linear-gradient(180deg, rgba(37, 51, 103, 0.06), rgba(239, 76, 39, 0.04));
+}
+
+.invoice-template--ticket-slip {
+  font-family: var(--invoice-mono, "Courier New", "Liberation Mono", monospace);
+}
+
+.invoice-template--ticket-slip .invoice-ticket-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.invoice-template--ticket-slip .ticket-doc-card,
+.invoice-template--ticket-slip .ticket-lines-panel,
+.invoice-template--ticket-slip .ticket-seller-panel,
+.invoice-template--ticket-slip .ticket-client-panel {
+  border-radius: 0;
+}
+
+.invoice-template--ticket-slip .invoice-ticket-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.invoice-template--ticket-slip .ticket-lines-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.invoice-template--ticket-slip .invoice-ticket-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.invoice-template--ticket-slip .ticket-totals-band {
+  margin-top: 0;
+}
+
+.invoice-template--ticket-slip .ticket-canvas {
+  min-height: 132px;
+  border-top: 1px solid rgba(0, 0, 0, 0.82);
+}
+
+.invoice-template--retail-triptych .invoice-triptych-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.invoice-template--retail-triptych .invoice-triptych-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.invoice-template--retail-triptych .triptych-client-card::before {
+  content: "Adresse de livraison";
+  display: block;
+  margin-bottom: 10px;
+  color: #3f618c;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.invoice-template--retail-triptych .triptych-lines-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.invoice-template--retail-triptych .invoice-triptych-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.9fr);
+  gap: 18px;
+}
+
+.invoice-template--retail-triptych .triptych-canvas {
+  min-height: 290px;
+  border: 1px dashed var(--core-border);
+  border-radius: 18px;
+}
+
+.invoice-template--studio-letter .invoice-studio-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+
+.invoice-template--studio-letter .invoice-studio-columns {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.82fr) minmax(0, 1.18fr);
+  gap: 18px;
+}
+
+.invoice-template--studio-letter .studio-seller-panel,
+.invoice-template--studio-letter .studio-client-panel,
+.invoice-template--studio-letter .studio-lines-panel {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.invoice-template--studio-letter .studio-lines-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.invoice-template--studio-letter .invoice-studio-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(240px, 0.92fr);
+  gap: 18px;
+}
+
+.invoice-template--studio-letter .studio-canvas {
+  min-height: 312px;
+  border-radius: 24px;
+  border: 1px solid rgba(30, 37, 43, 0.18);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 244, 238, 0.88));
+}
+
 .invoice-sheet[data-design-preset="chantier"] {
   --sheet-bg: #fefbf6;
   --sheet-border: rgba(124, 95, 63, 0.26);
@@ -1925,6 +2335,52 @@ img {
 
   .invoice-sheet[data-design-preset="studio"] .invoice-canvas {
     border-left: 0;
+  }
+
+  .invoice-template--banner-statement .invoice-banner-brandline,
+  .invoice-template--banner-statement .invoice-banner-meta-grid,
+  .invoice-template--banner-statement .invoice-banner-bottom-grid,
+  .invoice-template--sidebar-ledger .invoice-ledger-shell,
+  .invoice-template--service-dispatch .invoice-dispatch-top,
+  .invoice-template--service-dispatch .invoice-dispatch-meta-grid,
+  .invoice-template--service-dispatch .invoice-dispatch-bottom,
+  .invoice-template--card-deck .invoice-carddeck-top,
+  .invoice-template--card-deck .invoice-carddeck-grid,
+  .invoice-template--ticket-slip .invoice-ticket-top,
+  .invoice-template--ticket-slip .invoice-ticket-strip,
+  .invoice-template--retail-triptych .invoice-triptych-header,
+  .invoice-template--retail-triptych .invoice-triptych-grid,
+  .invoice-template--retail-triptych .invoice-triptych-summary,
+  .invoice-template--studio-letter .invoice-studio-head,
+  .invoice-template--studio-letter .invoice-studio-columns,
+  .invoice-template--studio-letter .invoice-studio-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-template--banner-statement .statement-banner-frame,
+  .invoice-template--sidebar-ledger .ledger-logo-frame,
+  .invoice-template--sidebar-ledger .ledger-banner-frame,
+  .invoice-template--service-dispatch .dispatch-logo-frame,
+  .invoice-template--service-dispatch .dispatch-banner-frame,
+  .invoice-template--card-deck .carddeck-logo-frame,
+  .invoice-template--card-deck .carddeck-banner-frame,
+  .invoice-template--retail-triptych .triptych-logo-frame,
+  .invoice-template--retail-triptych .triptych-banner-frame,
+  .invoice-template--studio-letter .studio-logo-frame,
+  .invoice-template--studio-letter .studio-banner-frame {
+    justify-self: start;
+  }
+
+  .invoice-template--service-dispatch .dispatch-title-card,
+  .invoice-template--card-deck .invoice-carddeck-top,
+  .invoice-template--retail-triptych .invoice-triptych-header,
+  .invoice-template--studio-letter .invoice-studio-head {
+    align-items: start;
+  }
+
+  .invoice-template--card-deck .carddeck-lines-panel,
+  .invoice-template--card-deck .carddeck-canvas-panel {
+    grid-column: auto;
   }
 
   .image-frame:not(.watermark-frame) {
