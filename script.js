@@ -248,6 +248,7 @@ const elements = {
     watermarkFrame: document.querySelector("#watermarkImageInput"),
   },
   imageResetButtons: [...document.querySelectorAll("[data-reset-image]")],
+  imageClearButtons: [...document.querySelectorAll("[data-clear-image]")],
   lineEditor: document.querySelector("#lineEditor"),
   addLineButton: document.querySelector("#addLineButton"),
   printButton: document.querySelector("#printButton"),
@@ -385,6 +386,18 @@ function bindImageInputs() {
       }
 
       state.imageSources[frameId] = defaultImageSources[frameId];
+      renderAll();
+    });
+  });
+
+  elements.imageClearButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const frameId = button.dataset.clearImage;
+      if (!frameId) {
+        return;
+      }
+
+      state.imageSources[frameId] = null;
       renderAll();
     });
   });
@@ -531,12 +544,9 @@ function renderOcrPanel() {
     } else if (isApplied) {
       statusLabel = "OCR appliqué";
       statusState = "applied";
-    } else if (hasDetectedData) {
+    } else if (hasRawText) {
       statusLabel = "Prêt à appliquer";
       statusState = "ready";
-    } else if (hasRawText) {
-      statusLabel = "Texte extrait";
-      statusState = "idle";
     }
 
     elements.ocrStatus.textContent = statusLabel;
@@ -544,8 +554,8 @@ function renderOcrPanel() {
   }
 
   if (elements.applyOcrButton) {
-    elements.applyOcrButton.disabled = !hasDetectedData || isApplied;
-    elements.applyOcrButton.classList.toggle("is-ready", hasDetectedData && !isApplied);
+    elements.applyOcrButton.disabled = !hasRawText || isApplied;
+    elements.applyOcrButton.classList.toggle("is-ready", hasRawText && !isApplied);
     elements.applyOcrButton.classList.toggle("is-applied", isApplied);
     elements.applyOcrButton.textContent = isApplied
       ? "OCR déjà appliqué"
@@ -708,13 +718,17 @@ function renderPreview() {
 
   elements.invoiceSheet.dataset.designPreset = state.designPreset;
   elements.headlineTotal.textContent = formatCurrency(grandTotal);
-  elements.previewLogoImage.src = state.imageSources.logoFrame || defaultImageSources.logoFrame;
-  elements.previewBannerImage.src = state.imageSources.bannerFrame || defaultImageSources.bannerFrame;
-  elements.previewWatermarkImage.src =
-    state.imageSources.watermarkFrame || defaultImageSources.watermarkFrame;
-  elements.previewLogoImage.alt = `Logo ${state.sellerLegal || "BigMat"}`;
-  elements.previewBannerImage.alt = state.sellerCategories || "Bandeau catégories";
-  elements.previewWatermarkImage.alt = "Visuel central";
+  renderPreviewImage(
+    elements.previewLogoImage,
+    "logoFrame",
+    `Logo ${state.sellerLegal || "BigMat"}`,
+  );
+  renderPreviewImage(
+    elements.previewBannerImage,
+    "bannerFrame",
+    state.sellerCategories || "Bandeau catégories",
+  );
+  renderPreviewImage(elements.previewWatermarkImage, "watermarkFrame", "Visuel central");
 
   elements.previewSellerBranch.textContent = state.sellerBranch || "SAINT-MARCEL";
   elements.previewSellerCategories.setAttribute(
@@ -1342,6 +1356,28 @@ function getPendingOcrExtraction(forceRefresh = false) {
   return pendingOcrExtraction;
 }
 
+function renderPreviewImage(node, frameId, altText) {
+  if (!node) {
+    return;
+  }
+
+  const source = resolveImageSource(frameId);
+  const frame = elements.imageFrameMap[frameId];
+
+  if (source) {
+    node.src = source;
+    node.alt = altText;
+    node.hidden = false;
+    frame?.classList.remove("is-empty");
+    return;
+  }
+
+  node.hidden = true;
+  node.removeAttribute("src");
+  node.alt = "";
+  frame?.classList.add("is-empty");
+}
+
 function getOcrDetectedCount(extracted) {
   if (!extracted) {
     return 0;
@@ -1585,6 +1621,15 @@ function cloneImageSources(source = defaultImageSources) {
     ...defaultImageSources,
     ...(source || {}),
   };
+}
+
+function resolveImageSource(frameId) {
+  const source = state.imageSources?.[frameId];
+  if (source === null) {
+    return "";
+  }
+
+  return source || defaultImageSources[frameId] || "";
 }
 
 function sanitizeDesignPreset(value) {

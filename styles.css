@@ -344,6 +344,13 @@ img {
   gap: 10px;
 }
 
+.image-control-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .image-control-head strong {
   font-size: 0.92rem;
 }
@@ -409,6 +416,10 @@ img {
 
 .ocr-apply-button:hover:not([disabled]) {
   transform: translateY(-1px);
+}
+
+.ocr-apply-button.is-ready {
+  background: linear-gradient(135deg, rgba(34, 110, 70, 0.96), rgba(240, 91, 40, 0.9));
 }
 
 .ocr-apply-button[disabled] {
@@ -1266,6 +1277,15 @@ img {
   object-fit: contain;
   user-select: none;
   pointer-events: none;
+}
+
+.image-frame.is-empty {
+  border: 1px dashed rgba(54, 38, 27, 0.14);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.image-frame.is-empty img {
+  display: none;
 }
 
 .logo-frame {
