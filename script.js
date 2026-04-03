@@ -208,6 +208,7 @@ const defaultState = {
   imageFrameSizes: cloneImageFrameSizes(defaultImageFrameSizes),
   layoutOffsets: cloneLayoutOffsets(defaultLayoutOffsets),
   ocrRawText: "",
+  ocrLastAppliedText: "",
   lines: lineTemplates.map(createLine),
 };
 
@@ -253,9 +254,11 @@ const elements = {
   resetButton: document.querySelector("#resetButton"),
   prefillDemoButton: document.querySelector("#prefillDemoButton"),
   runOcrButton: document.querySelector("#runOcrButton"),
+  applyOcrButton: document.querySelector("#applyOcrButton"),
   ocrInput: document.querySelector("#ocrInput"),
   ocrRawText: document.querySelector("#ocrRawText"),
   ocrStatus: document.querySelector("#ocrStatus"),
+  ocrApplyHint: document.querySelector("#ocrApplyHint"),
   toggleLayoutButton: document.querySelector("#toggleLayoutButton"),
   resetLayoutButton: document.querySelector("#resetLayoutButton"),
   invoiceSheet: document.querySelector("#invoiceSheet"),
@@ -306,6 +309,9 @@ const presetFromUrl = readPresetFromUrl();
 if (presetFromUrl) {
   state.designPreset = presetFromUrl;
 }
+let ocrStatusOverride = "";
+let pendingOcrSourceText = "";
+let pendingOcrExtraction = null;
 let layoutEditMode = false;
 let activeMovableId = null;
 let dragState = null;
@@ -340,6 +346,8 @@ function bindFieldInputs() {
 
   elements.ocrRawText.addEventListener("input", (event) => {
     state.ocrRawText = event.target.value;
+    clearOcrStatusOverride();
+    renderOcrPanel();
     saveState();
   });
 }
@@ -380,6 +388,13 @@ function bindImageInputs() {
       renderAll();
     });
   });
+
+  elements.ocrInput?.addEventListener("change", () => {
+    state.ocrLastAppliedText = "";
+    clearOcrStatusOverride();
+    renderOcrPanel();
+    saveState();
+  });
 }
 
 function bindActions() {
@@ -401,16 +416,22 @@ function bindActions() {
     }
 
     state = cloneState(defaultState);
+    clearOcrStatusOverride();
     renderAll();
   });
 
   elements.prefillDemoButton.addEventListener("click", () => {
     state = cloneState(defaultState);
+    clearOcrStatusOverride();
     renderAll();
   });
 
   elements.runOcrButton.addEventListener("click", () => {
     runOcrImport();
+  });
+
+  elements.applyOcrButton?.addEventListener("click", () => {
+    applyPendingOcrToInvoice();
   });
 
   elements.toggleLayoutButton.addEventListener("click", () => {
@@ -487,10 +508,58 @@ function bindActions() {
 function renderAll() {
   renderDesignPresetControls();
   syncInputs();
+  renderOcrPanel();
   renderLineEditor();
   renderPreview();
   renderLayoutEditor();
   saveState();
+}
+
+function renderOcrPanel() {
+  const extracted = getPendingOcrExtraction();
+  const hasRawText = Boolean(state.ocrRawText.trim());
+  const hasDetectedData = Boolean(extracted && getOcrDetectedCount(extracted) > 0);
+  const isApplied = hasRawText && state.ocrLastAppliedText === state.ocrRawText;
+
+  if (elements.ocrStatus) {
+    let statusLabel = "Prêt";
+    let statusState = "idle";
+
+    if (ocrStatusOverride) {
+      statusLabel = ocrStatusOverride;
+      statusState = ocrStatusOverride === "Échec OCR" ? "error" : "loading";
+    } else if (isApplied) {
+      statusLabel = "OCR appliqué";
+      statusState = "applied";
+    } else if (hasDetectedData) {
+      statusLabel = "Prêt à appliquer";
+      statusState = "ready";
+    } else if (hasRawText) {
+      statusLabel = "Texte extrait";
+      statusState = "idle";
+    }
+
+    elements.ocrStatus.textContent = statusLabel;
+    elements.ocrStatus.dataset.state = statusState;
+  }
+
+  if (elements.applyOcrButton) {
+    elements.applyOcrButton.disabled = !hasDetectedData || isApplied;
+    elements.applyOcrButton.classList.toggle("is-ready", hasDetectedData && !isApplied);
+    elements.applyOcrButton.classList.toggle("is-applied", isApplied);
+    elements.applyOcrButton.textContent = isApplied
+      ? "OCR déjà appliqué"
+      : "Appliquer l’OCR à la facture";
+  }
+
+  if (elements.ocrApplyHint) {
+    elements.ocrApplyHint.textContent = buildOcrApplyHint({
+      hasRawText,
+      hasDetectedData,
+      isApplied,
+      extracted,
+    });
+  }
 }
 
 function renderDesignPresetControls() {
@@ -939,15 +1008,9 @@ async function runOcrImport() {
     await worker.terminate();
 
     state.ocrRawText = result.data.text.trim();
-    const extracted = extractInvoiceData(state.ocrRawText);
-    applyOcrExtraction(extracted);
-    setOcrStatus(
-      extracted.lines?.length
-        ? `${extracted.lines.length} lignes`
-        : extracted.matchCount > 0
-          ? "Données trouvées"
-          : "Texte extrait",
-    );
+    state.ocrLastAppliedText = "";
+    getPendingOcrExtraction(true);
+    clearOcrStatusOverride();
     renderAll();
   } catch (error) {
     console.error(error);
@@ -956,6 +1019,25 @@ async function runOcrImport() {
   } finally {
     elements.runOcrButton.disabled = false;
   }
+}
+
+function applyPendingOcrToInvoice() {
+  const extracted = getPendingOcrExtraction();
+
+  if (!state.ocrRawText.trim()) {
+    window.alert("Analysez d’abord une image ou collez un texte OCR.");
+    return;
+  }
+
+  if (!extracted || getOcrDetectedCount(extracted) === 0) {
+    window.alert("Aucune donnée exploitable n’a été détectée dans ce texte OCR.");
+    return;
+  }
+
+  applyOcrExtraction(extracted);
+  state.ocrLastAppliedText = state.ocrRawText;
+  clearOcrStatusOverride();
+  renderAll();
 }
 
 let tesseractPromise;
@@ -1240,6 +1322,62 @@ function applyOcrExtraction(extracted) {
       discount: line.discount,
     }));
   }
+}
+
+function getPendingOcrExtraction(forceRefresh = false) {
+  const source = state.ocrRawText.trim();
+
+  if (!source) {
+    pendingOcrSourceText = "";
+    pendingOcrExtraction = null;
+    return null;
+  }
+
+  if (!forceRefresh && source === pendingOcrSourceText && pendingOcrExtraction) {
+    return pendingOcrExtraction;
+  }
+
+  pendingOcrSourceText = source;
+  pendingOcrExtraction = extractInvoiceData(source);
+  return pendingOcrExtraction;
+}
+
+function getOcrDetectedCount(extracted) {
+  if (!extracted) {
+    return 0;
+  }
+
+  return Math.max(
+    extracted.matchCount || 0,
+    Array.isArray(extracted.lines) ? extracted.lines.length : 0,
+  );
+}
+
+function buildOcrApplyHint({ hasRawText, hasDetectedData, isApplied, extracted }) {
+  if (!hasRawText) {
+    return "Analysez d’abord une image pour afficher les données détectées, puis appliquez-les à la facture.";
+  }
+
+  if (!hasDetectedData) {
+    return "Le texte OCR est visible, mais aucune donnée de facture exploitable n’a été détectée pour l’instant.";
+  }
+
+  const lineCount = Array.isArray(extracted?.lines) ? extracted.lines.length : 0;
+  const fieldCount = Math.max(0, (extracted?.matchCount || 0) - lineCount);
+  const parts = [];
+
+  if (lineCount > 0) {
+    parts.push(`${lineCount} ligne${lineCount > 1 ? "s" : ""}`);
+  }
+
+  if (fieldCount > 0) {
+    parts.push(`${fieldCount} champ${fieldCount > 1 ? "s" : ""}`);
+  }
+
+  const summary = parts.length > 0 ? parts.join(" et ") : "des données";
+  return isApplied
+    ? `OCR appliqué à la facture: ${summary}.`
+    : `OCR prêt à appliquer: ${summary} détecté${parts.length > 1 ? "s" : ""}.`;
 }
 
 function assignMatch(result, field, match) {
@@ -1666,7 +1804,12 @@ function loadImageElement(source) {
 
 
 function setOcrStatus(label) {
-  elements.ocrStatus.textContent = label;
+  ocrStatusOverride = label;
+  renderOcrPanel();
+}
+
+function clearOcrStatusOverride() {
+  ocrStatusOverride = "";
 }
 
 function escapeHtml(value) {
