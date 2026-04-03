@@ -1270,10 +1270,18 @@ function parseLegacyOcrLine(line) {
 }
 
 function parseStructuredOcrLine(line) {
-  const normalized = normalizeLine(line).replace(/\s*€\s*$/i, "").trim();
+  const normalized = normalizeLine(line)
+    .replace(/\bEUR\b/gi, " ")
+    .replace(/€/g, " ")
+    .trim();
 
   if (normalized.length < 8) {
     return null;
+  }
+
+  const tailParsed = parseStructuredOcrLineFromTail(normalized);
+  if (tailParsed) {
+    return tailParsed;
   }
 
   const match = normalized.match(
@@ -1303,6 +1311,76 @@ function parseStructuredOcrLine(line) {
     label,
     quantity,
     unit: "U",
+    unitPrice,
+    discount: 0,
+  });
+}
+
+function parseStructuredOcrLineFromTail(normalizedLine) {
+  const tokens = normalizedLine
+    .split(/\s+/)
+    .map((token) => cleanOcrToken(token))
+    .filter(Boolean);
+
+  if (tokens.length < 4) {
+    return null;
+  }
+
+  const lineTotalIndex = findPreviousNumberTokenIndex(tokens, tokens.length - 1);
+  if (lineTotalIndex < 0) {
+    return null;
+  }
+
+  const unitPriceIndex = findPreviousNumberTokenIndex(tokens, lineTotalIndex - 1);
+  if (unitPriceIndex < 0) {
+    return null;
+  }
+
+  let quantityIndex = -1;
+  const unitTokens = [];
+
+  for (let index = unitPriceIndex - 1; index >= 0; index -= 1) {
+    const token = tokens[index];
+
+    if (isNumberToken(token)) {
+      quantityIndex = index;
+      break;
+    }
+
+    if (isLooseUnitToken(token)) {
+      unitTokens.unshift(token);
+      continue;
+    }
+
+    if (unitTokens.length > 0) {
+      break;
+    }
+  }
+
+  if (quantityIndex < 0) {
+    return null;
+  }
+
+  const label = tokens.slice(0, quantityIndex).join(" ").trim();
+  const quantity = sanitizeNumber(tokens[quantityIndex]);
+  let unitPrice = sanitizeLocalizedNumber(tokens[unitPriceIndex]);
+  const lineTotal = sanitizeLocalizedNumber(tokens[lineTotalIndex]);
+  const unit = unitTokens.join(" ").trim() || "U";
+
+  if (!label || label.length < 3 || quantity <= 0 || unitPrice <= 0 || lineTotal <= 0) {
+    return null;
+  }
+
+  const recomputedTotal = roundTo(quantity * unitPrice, 2);
+  if (Math.abs(recomputedTotal - lineTotal) > Math.max(1, lineTotal * 0.03) && quantity > 0) {
+    unitPrice = roundTo(lineTotal / quantity, 2);
+  }
+
+  return createLine({
+    reference: "",
+    label,
+    quantity,
+    unit,
     unitPrice,
     discount: 0,
   });
@@ -1526,6 +1604,23 @@ function isNumberToken(value) {
 
 function isUnitToken(value) {
   return /^[A-Z]{1,4}$/.test(value);
+}
+
+function isLooseUnitToken(value) {
+  const normalized = cleanOcrToken(value).toLowerCase();
+  return /^(u|pc|pcs|piece|pieces|pce|pi|ml|m|m2|m²|m3|m³|kg|g|l|lot|forfait|jour|jours|j|h|heure|heures|hr|hrs|semaine|semaines|sem|mois)$/.test(
+    normalized,
+  );
+}
+
+function findPreviousNumberTokenIndex(tokens, startIndex) {
+  for (let index = startIndex; index >= 0; index -= 1) {
+    if (isNumberToken(tokens[index])) {
+      return index;
+    }
+  }
+
+  return -1;
 }
 
 function loadState() {
